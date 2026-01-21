@@ -1,7 +1,5 @@
-node_modules/
-functions/node_modules/
-.firebase/
-dist/
-.env
-
 firebase-admin-setup/serviceAccountKey.json
+firebase-admin-setup/
+functions/
+node_modules/
+.env
