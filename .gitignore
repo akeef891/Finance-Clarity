@@ -3,3 +3,5 @@ functions/node_modules/
 .firebase/
 dist/
 .env
+
+firebase-admin-setup/serviceAccountKey.json
