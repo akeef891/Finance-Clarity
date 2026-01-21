@@ -1,0 +1,3794 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Finance Clarity - Know your money</title>
+    <!-- Prevent favicon.ico 404 (no UI impact) -->
+    <link rel="icon" href="data:image/x-icon;base64,AAABAAEAEBAAAAEAIABoBAAAFgAAACgAAAAQAAAAIAAAAAEAIAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==">
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <style>
+        /* FIX EMPTY SPACE + BLUR ISSUE */
+      
+        body {
+          margin: 0;
+          padding: 0;
+          overflow-x: hidden;
+        }
+      
+        /* All pages */
+        #dashboardPage,
+        #aboutPage,
+        #contactPage {
+          margin-top: 0 !important;
+          padding-top: 0 !important;
+          min-height: auto !important;
+        }
+      
+        /* Main content wrapper */
+        .main-content,
+        .page {
+          margin-top: 0 !important;
+          padding-top: 0 !important;
+        }
+      </style>      
+
+<style>
+/* FIX: remove top gap on About & Contact */
+.page, .about-page, .contact-page {
+  padding-top: 0 !important;
+  margin-top: 0 !important;
+}
+</style>
+
+</head>
+<body class="user-page page-loading">
+    <div id="auth-section"></div>
+    <div id="app-section" style="display:none;"></div>
+    <div id="history"></div>
+
+    <!-- Authentication Modal -->
+    <div id="auth-modal" class="modal">
+        <div class="modal-content auth-modal-content">
+            <div class="modal-header">
+                <h3 id="auth-modal-title">Sign In</h3>
+                <button class="modal-close" onclick="closeAuthModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <div id="auth-tabs" class="auth-tabs">
+                    <button class="auth-tab active" onclick="switchAuthTab('signin')">Sign In</button>
+                    <button class="auth-tab" onclick="switchAuthTab('signup')">Sign Up</button>
+                </div>
+                <div id="auth-error" class="auth-error"></div>
+                <div class="form-field">
+                    <label>Email</label>
+                    <input type="email" id="auth-email" placeholder="your@email.com" class="input" autocomplete="email">
+                </div>
+                <div class="form-field">
+                    <label>Password</label>
+                    <input type="password" id="auth-password" placeholder="Enter password" class="input" autocomplete="current-password">
+                </div>
+                <div id="auth-loading" class="auth-loading" style="display: none;">
+                    <p>Processing...</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button onclick="closeAuthModal()" class="btn btn-secondary">Cancel</button>
+                <button id="auth-submit-btn" onclick="handleAuth()" class="btn btn-primary">Sign In</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main App (hidden until authenticated) -->
+    <div id="main-app" class="hidden">
+    <div class="container">
+        <!-- Header (visible on all pages) -->
+        <header class="main-header">
+            <div class="logo-section">
+                <div class="logo-icon">✨</div>
+                <div class="logo-text">
+                    <h1>Finance Clarity</h1>
+                    <p class="tagline">Know your money</p>
+                </div>
+            </div>
+            <button class="mobile-menu-toggle" onclick="if(typeof window.toggleMobileMenu==='function'){window.toggleMobileMenu();}" aria-label="Toggle menu">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+            <div class="header-actions" id="header-actions">
+                <button id="dashboardBtn" onclick="if(typeof window.navigateTo==='function'){window.navigateTo('dashboard');}if(typeof window.closeMobileMenu==='function'){window.closeMobileMenu();}" class="header-btn" title="Dashboard" id="nav-dashboard">
+                    <span class="btn-icon">📊</span>
+                    Dashboard
+                </button>
+                <button id="goalsBtn" onclick="if(typeof window.navigateTo==='function'){window.navigateTo('goals');}if(typeof window.closeMobileMenu==='function'){window.closeMobileMenu();}" class="header-btn" title="Financial Goals" id="nav-goals">
+                    <span class="btn-icon">🎯</span>
+                    Goals
+                </button>
+                <button id="aboutBtn" onclick="if(typeof window.navigateTo==='function'){window.navigateTo('about');}if(typeof window.closeMobileMenu==='function'){window.closeMobileMenu();}" class="header-btn" title="About Us" id="nav-about">
+                    <span class="btn-icon">ℹ️</span>
+                    About
+                </button>
+                <button id="contactBtn" onclick="if(typeof window.navigateTo==='function'){window.navigateTo('contact');}if(typeof window.closeMobileMenu==='function'){window.closeMobileMenu();}" class="header-btn" title="Contact Us" id="nav-contact">
+                    <span class="btn-icon">📧</span>
+                    Contact
+                </button>
+                <button id="admin-btn" onclick="if(typeof openAdminModal==='function'){openAdminModal();}if(typeof window.closeMobileMenu==='function'){window.closeMobileMenu();}" class="header-btn" title="Admin Panel" style="display: none;">
+                    <span class="btn-icon">⚙️</span>
+                    Admin
+                </button>
+                <button onclick="if(typeof handleSignOut==='function'){handleSignOut();}if(typeof window.closeMobileMenu==='function'){window.closeMobileMenu();}" class="header-btn signout-btn">
+                    <span class="btn-icon">🚪</span>
+                    Sign Out
+                </button>
+                <button onclick="if(typeof resetPersonalData==='function'){resetPersonalData();}if(typeof window.closeMobileMenu==='function'){window.closeMobileMenu();}" class="header-btn reset-btn">
+                    <span class="btn-icon">🔄</span>
+                    Reset
+                </button>
+            </div>
+        </header>
+
+        <!-- Dashboard View -->
+        <div id="view-dashboard" class="page-view active">
+        <!-- Financial Overview -->
+        <section class="dashboard-section">
+            <h2 class="section-title">Financial Overview</h2>
+            <div class="dashboard-cards">
+                <div class="overview-card income-card">
+                    <div class="card-icon-wrapper">
+                        <div class="card-icon income-icon">💼</div>
+                    </div>
+                    <div class="card-content">
+                        <p class="card-label">Total Income</p>
+                        <p class="card-value loading" id="total-income">
+                            <span class="skeleton skeleton-text" style="width: 100px;"></span>
+                        </p>
+                        <p class="card-description">Monthly earnings</p>
+                    </div>
+                </div>
+                <div class="overview-card expense-card">
+                    <div class="card-icon-wrapper">
+                        <div class="card-icon expense-icon">₹</div>
+                    </div>
+                    <div class="card-content">
+                        <p class="card-label">Fixed Expenses</p>
+                        <p class="card-value loading" id="total-fixed">
+                            <span class="skeleton skeleton-text" style="width: 100px;"></span>
+                        </p>
+                        <p class="card-description" id="fixed-percentage">
+                            <span class="skeleton skeleton-text-small"></span>
+                        </p>
+                    </div>
+                </div>
+                <div class="overview-card flexible-card">
+                    <div class="card-icon-wrapper">
+                        <div class="card-icon flexible-icon">📊</div>
+                    </div>
+                    <div class="card-content">
+                        <p class="card-label">Flexible Spending</p>
+                        <p class="card-value loading" id="total-flexible">
+                            <span class="skeleton skeleton-text" style="width: 100px;"></span>
+                        </p>
+                        <p class="card-description">Budgeted amount</p>
+                    </div>
+                </div>
+                <div class="overview-card savings-card" id="savings-card">
+                    <div class="card-icon-wrapper">
+                        <div class="card-icon savings-icon">🐷</div>
+                    </div>
+                    <div class="card-content">
+                        <p class="card-label">Savings Buffer</p>
+                        <p class="card-value loading" id="total-savings">
+                            <span class="skeleton skeleton-text" style="width: 100px;"></span>
+                        </p>
+                        <p class="card-description" id="savings-status">
+                            <span class="skeleton skeleton-text-small"></span>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Main Content - Two Column Layout -->
+        <div class="main-content">
+            <!-- Left Column -->
+            <div class="left-column">
+                <!-- Monthly Income -->
+                <section class="content-card income-section">
+                    <div class="card-header">
+                        <div class="section-icon income-section-icon">💼</div>
+                        <div class="section-header-text">
+                            <h3>Monthly Income</h3>
+                            <p class="section-amount" id="income-section-amount">₹0.00</p>
+                        </div>
+                    </div>
+                    <div id="income-list" class="empty-state">
+                        <p>No income sources added yet. Add your monthly income to get started.</p>
+                    </div>
+                    <button onclick="showAddIncomeModal()" class="add-btn income-add-btn">
+                        <span class="add-icon">+</span>
+                        Add Income
+                    </button>
+                </section>
+
+                <!-- Fixed Obligations -->
+                <section class="content-card fixed-section">
+                    <div class="card-header">
+                        <div class="section-icon fixed-section-icon">₹</div>
+                        <div class="section-header-text">
+                            <h3>Fixed Obligations</h3>
+                            <p class="section-amount" id="fixed-section-amount">₹0.00 (0.0% of income)</p>
+                        </div>
+                    </div>
+                    <div id="expense-list" class="expense-list-container">
+                        <div class="skeleton-card">
+                            <div class="skeleton skeleton-item"></div>
+                            <div class="skeleton skeleton-item"></div>
+                        </div>
+                    </div>
+                    <button onclick="showAddExpenseModal()" class="add-btn expense-add-btn">
+                        <span class="add-icon">+</span>
+                        Add Expense
+                    </button>
+                </section>
+
+                <!-- Flexible Spending -->
+                <section class="content-card flexible-section">
+                    <div class="card-header">
+                        <div class="section-icon flexible-section-icon">₹</div>
+                        <div class="section-header-text">
+                            <h3>Flexible Spending</h3>
+                            <p class="section-amount" id="flexible-section-amount">₹0.00</p>
+                        </div>
+                    </div>
+                    <p class="section-subtitle">Set monthly limits for your variable spending categories.</p>
+                    <div class="flexible-categories-grid">
+                        <div class="category-card">
+                            <div class="category-icon">🍴</div>
+                            <label for="food-limit">Food & Dining</label>
+                            <div class="currency-input-wrapper">
+                                <span class="currency-symbol">₹</span>
+                                <input type="number" id="food-limit" placeholder="0.00" class="currency-input" step="0.01" min="0" onchange="if(typeof updateFlexibleSpending==='function'){updateFlexibleSpending('food', this.value);}">
+                            </div>
+                        </div>
+                        <div class="category-card">
+                            <div class="category-icon">✈️</div>
+                            <label for="travel-limit">Travel & Transport</label>
+                            <div class="currency-input-wrapper">
+                                <span class="currency-symbol">₹</span>
+                                <input type="number" id="travel-limit" placeholder="0.00" class="currency-input" step="0.01" min="0" onchange="if(typeof updateFlexibleSpending==='function'){updateFlexibleSpending('travel', this.value);}">
+                            </div>
+                        </div>
+                        <div class="category-card">
+                            <div class="category-icon">🛍️</div>
+                            <label for="shopping-limit">Shopping</label>
+                            <div class="currency-input-wrapper">
+                                <span class="currency-symbol">₹</span>
+                                <input type="number" id="shopping-limit" placeholder="0.00" class="currency-input" step="0.01" min="0" onchange="if(typeof updateFlexibleSpending==='function'){updateFlexibleSpending('shopping', this.value);}">
+                            </div>
+                        </div>
+                        <div class="category-card">
+                            <div class="category-icon">⋯</div>
+                            <label for="misc-limit">Miscellaneous</label>
+                            <div class="currency-input-wrapper">
+                                <span class="currency-symbol">₹</span>
+                                <input type="number" id="misc-limit" placeholder="0.00" class="currency-input" step="0.01" min="0" onchange="if(typeof updateFlexibleSpending==='function'){updateFlexibleSpending('miscellaneous', this.value);}">
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+            <!-- Right Column -->
+            <div class="right-column">
+                <!-- Monthly Savings -->
+                <section class="content-card savings-section" id="savings-section-card">
+                    <div class="card-header">
+                        <div class="section-icon savings-section-icon">🐷</div>
+                        <div class="section-header-text">
+                            <h3>Monthly Savings</h3>
+                            <span class="status-tag" id="savings-tag">Zero</span>
+                        </div>
+                    </div>
+                    <div class="savings-content">
+                        <p class="savings-amount" id="savings-display-amount">₹0.00</p>
+                        <p class="savings-warning" id="savings-warning">No savings buffer. Any unexpected expense could cause financial stress.</p>
+                    </div>
+                    <div class="savings-rate-section">
+                        <div class="savings-rate-header">
+                            <span>Savings Rate</span>
+                            <span class="target-rate">Target: 20-30%</span>
+                        </div>
+                        <div class="progress-bar-container">
+                            <div class="progress-bar" id="savings-progress-bar">
+                                <span class="progress-text" id="savings-rate-text">0%</span>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- AI Financial Summary -->
+                <section class="content-card ai-summary-section" id="ai-summary-section" style="display: none;">
+                    <div class="card-header">
+                        <div class="section-icon ai-summary-icon">🤖</div>
+                        <h3>AI Financial Summary</h3>
+                    </div>
+                    <div class="ai-summary-content" id="ai-summary-content">
+                        <p class="ai-summary-text">Analyzing your finances...</p>
+                    </div>
+                </section>
+
+                <!-- Can I Afford This? Tool -->
+                <section class="content-card affordability-section">
+                    <div class="card-header">
+                        <div class="section-icon affordability-icon">🧮</div>
+                        <h3>Can I Afford This?</h3>
+                    </div>
+                    <p class="section-subtitle">Check if a purchase fits your budget</p>
+                    <div class="affordability-form">
+                        <div class="form-field">
+                            <label for="purchase-amount">Purchase Amount</label>
+                            <div class="currency-input-wrapper">
+                                <span class="currency-symbol">₹</span>
+                                <input type="number" id="purchase-amount" placeholder="0.00" class="currency-input" step="0.01" min="0">
+                            </div>
+                        </div>
+                        <div class="form-field">
+                            <label for="purchase-type">Purchase Type</label>
+                            <div class="purchase-type-buttons">
+                                <button type="button" class="purchase-type-btn active" data-type="one-time" onclick="selectPurchaseType('one-time')">
+                                    One-Time
+                                    <span class="type-description">Single purchase</span>
+                                </button>
+                            </div>
+                        </div>
+                        <button onclick="checkAffordability()" class="check-affordability-btn">
+                            Check Affordability →
+                        </button>
+                    </div>
+                    <div id="affordability-result" class="affordability-result"></div>
+                </section>
+
+                <!-- Recent Activity Section -->
+                <section class="content-card recent-activity-section">
+                    <div class="card-header">
+                        <div class="section-icon activity-icon">📜</div>
+                        <h3>Recent Activity</h3>
+                    </div>
+                    <div id="recent-activity-container" class="recent-activity-container">
+                        <div id="recent-activity-list"></div>
+                        <div class="activity-skeleton">
+                            <div class="skeleton-item"></div>
+                            <div class="skeleton-item"></div>
+                            <div class="skeleton-item"></div>
+                        </div>
+                    </div>
+                    <div class="activity-footer">
+                        <button onclick="openHistoryModal()" class="btn-link" id="view-history-btn">
+                            View Full History →
+                        </button>
+                        <p class="privacy-note">🔒 Your financial data is private and visible only to your account.</p>
+                    </div>
+                </section>
+            </div>
+        </div>
+
+        <!-- Charts Section -->
+        <section class="dashboard-section charts-section">
+            <h2 class="section-title">Financial Insights</h2>
+            <div class="charts-grid">
+                <div class="chart-card">
+                    <h3 class="chart-title">Income vs Expenses</h3>
+                    <div class="chart-container">
+                        <canvas id="incomeExpenseChart"></canvas>
+                    </div>
+                </div>
+                <div class="chart-card">
+                    <h3 class="chart-title">Category Spending</h3>
+                    <div class="chart-container">
+                        <canvas id="expensePieChart"></canvas>
+                    </div>
+                </div>
+                <div class="chart-card">
+                    <h3 class="chart-title">Savings Trend</h3>
+                    <div class="chart-container">
+                        <canvas id="savingsLineChart"></canvas>
+                    </div>
+                </div>
+                <div class="chart-card">
+                    <h3 class="chart-title">Monthly Savings Comparison</h3>
+                    <div class="chart-container">
+                        <canvas id="savingsBarChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="main-footer">
+            <p>Finance Clarity Tool • Your data stays on your device</p>
+            <p style="margin-top: 8px; font-size: 12px;">
+                <span id="user-email-display"></span>
+            </p>
+        </footer>
+    </div>
+    </div>
+
+    <!-- History Modal -->
+    <div id="history-modal" class="modal">
+        <div class="modal-content history-modal-content">
+            <div class="modal-header">
+                <h3>Transaction History</h3>
+                <button class="modal-close" onclick="closeHistoryModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="history-modal-controls">
+                    <div class="history-stats">
+                        <span id="history-count">0 transactions</span>
+                    </div>
+                    <div class="history-actions">
+                        <button onclick="exportHistory()" class="btn-icon-text" title="Export History">
+                            <span>📥</span> Export
+                        </button>
+                        <button onclick="confirmClearHistory()" class="btn-icon-text btn-warning" title="Clear All History">
+                            <span>🗑️</span> Clear All
+                        </button>
+                    </div>
+                </div>
+                <div id="history-modal-loading" class="history-loading">
+                    <div class="history-skeleton">
+                        <div class="skeleton-item"></div>
+                        <div class="skeleton-item"></div>
+                        <div class="skeleton-item"></div>
+                        <div class="skeleton-item"></div>
+                        <div class="skeleton-item"></div>
+                    </div>
+                </div>
+                <div id="history-modal-content" class="history-grouped-container" style="display: none;"></div>
+                <div id="history-empty-state" class="empty-state" style="display: none;">
+                    <div class="empty-icon">📋</div>
+                    <p>No transaction history yet.</p>
+                    <p class="empty-subtitle">Start adding income or expenses to see your history here.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+        </div>
+
+        <!-- About Page View -->
+        <div id="view-about" class="page-view">
+            <div class="page-container" style="margin-top: 0; padding-top: 0;">
+                <div class="about-page-content">
+                    <h1>About Finance Clarity</h1>
+                    <p class="about-subtitle">
+                        Finance Clarity helps users track income, expenses, savings, affordability, and spending behavior in a clear and visual way.
+                    </p>
+                    <div class="about-section">
+                        <h2>Clarity for Everyday Decisions</h2>
+                        <p>
+                            The goal of Finance Clarity is to help users make confident, informed financial decisions through real-time insights and trends. Instead of guessing where your money goes, you see a live picture of your cash flow, savings, and spending capacity.
+                        </p>
+                        <p>
+                            By combining clean visuals with practical calculations, Finance Clarity makes it easier to answer questions like "Can I afford this?", "How much can I safely spend this month?", and "Am I on track with my savings?".
+                        </p>
+                        <p>
+                            Our intuitive interface provides instant feedback on your financial decisions, helping you understand the immediate and long-term impact of your spending choices. With real-time calculations and visual representations, you can quickly assess your financial health and make adjustments as needed.
+                        </p>
+                    </div>
+                    <div class="about-section">
+                        <h2>What You Can Do</h2>
+                        <p>
+                            With Finance Clarity, you can quickly log income, fixed commitments, and flexible spending, then see how each decision impacts your savings buffer. Interactive charts highlight trends over time so you can spot patterns, adjust habits, and stay ahead of potential shortfalls.
+                        </p>
+                        <p>
+                            The experience is designed to stay fast, focused, and distraction-free, so you spend less time managing spreadsheets and more time making decisions with confidence.
+                        </p>
+                        <p>
+                            Track your financial progress with detailed history logs, analyze spending patterns through comprehensive charts, and use the affordability checker to make informed purchase decisions. All your financial data is organized in one place, making it easy to understand your complete financial picture at a glance.
+                        </p>
+                    </div>
+                    <div class="about-section">
+                        <h2>Built for Real Life</h2>
+                        <p>
+                            Finance Clarity is intentionally practical: it focuses on the core numbers that matter most—income, obligations, savings, and flexible spending—so you always know your true room to maneuver. Whether you are planning a major purchase or just trying to stay on top of month-to-month expenses, the app keeps your finances transparent and actionable.
+                        </p>
+                        <p>
+                            Our platform provides comprehensive financial tracking that adapts to your lifestyle. You can monitor your financial health in real-time, identify spending patterns, and make data-driven decisions that align with your financial goals.
+                        </p>
+                        <p>
+                            The application is designed with privacy and security in mind, ensuring that your financial information remains protected while providing you with powerful insights. Whether you're tracking daily expenses or planning for long-term financial goals, Finance Clarity gives you the tools you need to stay in control of your finances.
+                        </p>
+                    </div>
+                    <div class="about-section">
+                        <h2>Getting Started</h2>
+                        <p>
+                            Getting started with Finance Clarity is simple. Begin by adding your income sources, then list your fixed monthly expenses. Next, set budgets for your flexible spending categories like food, travel, shopping, and miscellaneous expenses. The dashboard will automatically calculate your available savings and show you how much you can safely spend.
+                        </p>
+                        <p>
+                            Use the affordability checker before making significant purchases to see if they fit within your budget. Review your spending trends through interactive charts that help you identify areas where you can optimize your finances. With regular use, you'll develop better financial habits and gain greater control over your money.
+                        </p>
+                    </div>
+                    <div style="margin-top: 24px;">
+                        <button onclick="if(typeof window.navigateTo==='function'){window.navigateTo('dashboard');}" class="btn btn-primary">Back to Dashboard</button>
+                    </div>
+                    <div class="about-footer">
+                        Finance Clarity is designed as a modern, trustworthy companion for everyday money decisions—simple enough to use daily, powerful enough to rely on long term.
+                        <div style="margin-top: 10px;">
+                            Built by Mohammed Akeef — Founder & Developer of Finance Clarity.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Goals Page View -->
+        <div id="view-goals" class="page-view">
+            <div class="page-container" style="margin-top: 0; padding-top: 0;">
+                <div class="about-page-content">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+                        <div>
+                            <h1 style="margin: 0;">Financial Goals</h1>
+                            <p class="about-subtitle" style="margin-top: 8px; margin-bottom: 0;">
+                                Track your savings goals and get actionable plans to achieve them.
+                            </p>
+                        </div>
+                        <button onclick="if(typeof window.showAddGoalModal==='function'){window.showAddGoalModal();}" class="btn btn-primary" style="white-space: nowrap;">
+                            + Add Goal
+                        </button>
+                    </div>
+                    
+                    <!-- Goals List Container -->
+                    <div id="goals-list-container">
+                        <!-- Goals will be rendered here dynamically -->
+                    </div>
+                    
+                    <!-- Empty State -->
+                    <div id="goals-empty-state" class="about-section" style="display: none;">
+                        <h2>No Goals Yet</h2>
+                        <p>
+                            Create a savings goal to start tracking your progress. You can:
+                        </p>
+                        <ul>
+                            <li>Click the "Add Goal" button above</li>
+                            <li>Or ask the AI Assistant: "Create a goal to save ₹50,000 in 6 months"</li>
+                        </ul>
+                        <p style="margin-top: 16px;">
+                            The AI will analyze your finances and create a personalized plan to help you reach your goal.
+                        </p>
+                    </div>
+                    
+                    <div style="margin-top: 24px;">
+                        <button onclick="if(typeof window.navigateTo==='function'){window.navigateTo('dashboard');}" class="btn btn-primary">Back to Dashboard</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Contact Page View -->
+        <div id="view-contact" class="page-view">
+            <div class="page-container" style="margin-top: 0; padding-top: 0;">
+                <div class="contact-page-content">
+                    <div class="contact-page-header">
+                    <h1>Contact Us</h1>
+                        <p class="contact-page-subtitle">Have a question or feedback? We'd love to hear from you!</p>
+                    </div>
+                    
+                    <div class="contact-page-layout">
+                    <!-- Contact Information -->
+                    <div class="contact-info-section">
+                        <h2>Contact Information</h2>
+                            <div class="contact-info-grid">
+                        <div class="contact-info-item">
+                                    <div class="contact-info-icon">📧</div>
+                                    <div class="contact-info-content">
+                                        <span class="contact-info-label">Email</span>
+                                <a href="mailto:mdakeef2009@gmail.com" class="contact-link">mdakeef2009@gmail.com</a>
+                            </div>
+                        </div>
+                        <div class="contact-info-item">
+                                    <div class="contact-info-icon">📱</div>
+                                    <div class="contact-info-content">
+                                        <span class="contact-info-label">Phone</span>
+                                <a href="tel:+919342903964" class="contact-link">+91 9342903964</a>
+                                    </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Contact Form -->
+                    <div class="contact-form-section">
+                        <h2>Send us a Message</h2>
+                            <form id="contact-page-form" onsubmit="if(typeof submitContactFormPage==='function'){submitContactFormPage(event);}else{event.preventDefault();}">
+                            <div class="form-field">
+                                <label for="contact-page-name">Name *</label>
+                                <input type="text" id="contact-page-name" placeholder="Your name" class="input" required>
+                            </div>
+                            <div class="form-field">
+                                <label for="contact-page-email">Email *</label>
+                                <input type="email" id="contact-page-email" placeholder="your.email@example.com" class="input" required>
+                            </div>
+                            <div class="form-field">
+                                <label for="contact-page-message">Message *</label>
+                                <textarea id="contact-page-message" placeholder="Your message..." class="input" rows="5" required></textarea>
+                            </div>
+                                <div id="contact-page-form-message" class="contact-form-message"></div>
+                                <div class="contact-form-actions">
+                                <button type="button" onclick="if(typeof window.navigateTo==='function'){window.navigateTo('dashboard');}" class="btn btn-secondary">Cancel</button>
+                                <button type="submit" id="contact-page-submit-btn" class="btn btn-primary">Send Message</button>
+                            </div>
+                        </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+    </div>
+
+    <!-- AI Chatbot -->
+    <div id="ai-chatbot-container" class="ai-chatbot-container">
+        <button id="ai-chatbot-toggle" class="ai-chatbot-toggle" onclick="window.AIChatbotUI?.toggleChat()" aria-label="Open AI Chatbot">
+            <span class="ai-chatbot-icon">💬</span>
+        </button>
+        <div id="ai-chatbot-panel" class="ai-chatbot-panel hidden">
+            <div class="ai-chatbot-header">
+                <div class="ai-chatbot-header-content">
+                    <h3>AI Finance Assistant</h3>
+                    <p class="ai-chatbot-subtitle">Ask me about your finances</p>
+                </div>
+                <button class="ai-chatbot-close" onclick="window.AIChatbotUI?.toggleChat()" aria-label="Close Chatbot">×</button>
+            </div>
+            <div id="ai-chatbot-messages" class="ai-chatbot-messages"></div>
+            <div id="ai-chatbot-suggestions" class="ai-chatbot-suggestions"></div>
+            <div class="ai-chatbot-input-container">
+                <input type="text" id="ai-chatbot-input" class="ai-chatbot-input" placeholder="Ask about your finances..." onkeypress="if(event.key === 'Enter') window.AIChatbotUI?.sendMessage()">
+                <button class="ai-chatbot-send" onclick="window.AIChatbotUI?.sendMessage()" aria-label="Send Message">→</button>
+            </div>
+    </div>
+    </div>
+
+    <!-- Confirm Clear History Modal -->
+    <div id="confirm-clear-modal" class="modal">
+        <div class="modal-content confirm-modal-content">
+            <div class="modal-header">
+                <h3>Clear All History?</h3>
+                <button class="modal-close" onclick="closeConfirmClearModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <p class="confirm-text">Are you sure you want to delete all transaction history? This action cannot be undone.</p>
+                <p class="confirm-subtitle">This will permanently remove all your transaction records.</p>
+            </div>
+            <div class="modal-footer">
+                <button onclick="closeConfirmClearModal()" class="btn btn-secondary">Cancel</button>
+                <button onclick="clearAllHistory()" class="btn btn-warning">Delete All History</button>
+            </div>
+    </div>
+    </div>
+
+    <!-- Add/Edit Goal Modal (Level 8) -->
+    <div id="goal-modal" class="modal" style="display: none;">
+        <div class="modal-content auth-modal-content">
+            <div class="modal-header">
+                <h3 id="goal-modal-title">Add Financial Goal</h3>
+                <button class="modal-close" onclick="if(typeof window.closeGoalModal==='function'){window.closeGoalModal();}">×</button>
+            </div>
+            <div class="modal-body">
+                <div id="goal-error" class="auth-error" style="display: none;"></div>
+                <div class="form-field">
+                    <label>Goal Name</label>
+                    <input type="text" id="goal-name-input" placeholder="e.g., Emergency Fund, Vacation Savings" class="input" maxlength="100">
+                </div>
+                <div class="form-field">
+                    <label>Target Amount (₹)</label>
+                    <input type="number" id="goal-amount-input" placeholder="50000" class="input" step="0.01" min="1">
+                </div>
+                <div class="form-field">
+                    <label>Duration (Months)</label>
+                    <input type="number" id="goal-duration-input" placeholder="6" class="input" step="1" min="1" max="120">
+                </div>
+                <div id="goal-preview" style="background: #1a1a1a; padding: 12px; border-radius: 4px; margin-top: 12px; display: none;">
+                    <div style="font-size: 0.875rem; color: #888; margin-bottom: 4px;">Monthly Required:</div>
+                    <div id="goal-monthly-preview" style="font-size: 1rem; font-weight: 500;"></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button onclick="if(typeof window.closeGoalModal==='function'){window.closeGoalModal();}" class="btn btn-secondary">Cancel</button>
+                <button id="goal-submit-btn" onclick="if(typeof window.saveGoal==='function'){window.saveGoal();}" class="btn btn-primary">Save Goal</button>
+            </div>
+    </div>
+    </div>
+
+    <!-- About Us Modal (hidden, kept for compatibility) -->
+    <div id="about-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>About Finance Clarity</h3>
+                <button class="modal-close" onclick="closeAboutModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="about-page">
+                    <div class="about-content">
+                        <h2>Finance Clarity</h2>
+                        <p class="about-subtitle">Know your money</p>
+                        <div class="about-section">
+                            <h3>What is Finance Clarity?</h3>
+                            <p>
+                                Finance Clarity is a comprehensive financial tracking application designed to help you understand and manage your money with complete clarity. Our goal is to empower you to make informed financial decisions by providing a clear view of your income, expenses, and savings.
+                            </p>
+                        </div>
+                        <div class="about-section">
+                            <h3>Purpose</h3>
+                            <p>
+                                We help users track their income, expenses, and savings clearly. With Finance Clarity, you can:
+                            </p>
+                            <ul>
+                                <li>Monitor your monthly income sources</li>
+                                <li>Track fixed and flexible expenses</li>
+                                <li>Calculate your savings automatically</li>
+                                <li>Make informed purchase decisions with affordability checks</li>
+                                <li>View your financial trends with interactive charts</li>
+                                <li>Maintain complete financial clarity and control</li>
+                            </ul>
+                        </div>
+                        <div class="about-section">
+                            <h3>Value to Users</h3>
+                            <p>
+                                Finance Clarity provides real-time insights into your financial health, helping you:
+                            </p>
+                            <ul>
+                                <li>Understand where your money goes</li>
+                                <li>Identify spending patterns and opportunities to save</li>
+                                <li>Make data-driven financial decisions</li>
+                                <li>Achieve your savings goals</li>
+                            </ul>
+                        </div>
+                        <div class="about-section">
+                            <h3>Technology Stack</h3>
+                            <p>
+                                Finance Clarity is built with modern web technologies:
+                            </p>
+                            <ul>
+                                <li><strong>Frontend:</strong> HTML5, CSS3, JavaScript (ES6+)</li>
+                                <li><strong>Charts & Visualization:</strong> Chart.js</li>
+                                <li><strong>Backend:</strong> Firebase (Authentication & Firestore)</li>
+                                <li><strong>Design:</strong> Dark theme with smooth animations</li>
+                            </ul>
+                        </div>
+                        <div class="about-section">
+                            <h3>Built With</h3>
+                            <p>
+                                Finance Clarity is built by <strong>Mohammed Akeef</strong> with a focus on simplicity, security, and user privacy. Your financial data is securely stored and synced across devices using Firebase, ensuring your information remains private and accessible only to you.
+                            </p>
+                        </div>
+                        <p class="about-footer">
+                            Version 1.0 • Professional • Trustworthy • Modern Finance
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Contact Us Modal (hidden, kept for compatibility) -->
+    <div id="contact-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Contact Us</h3>
+                <button class="modal-close" onclick="closeContactModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="contact-page">
+                    <p style="margin-bottom: 24px; color: var(--text-secondary);">
+                        Have a question or feedback? We'd love to hear from you!
+                    </p>
+                    
+                    <!-- Contact Information -->
+                    <div class="contact-info-section">
+                        <h3 style="margin: 0 0 16px 0; color: var(--text-primary); font-size: 18px;">Contact Information</h3>
+                        <div class="contact-info-item">
+                            <span style="font-size: 20px;">📧</span>
+                            <div>
+                                <span style="color: var(--text-secondary); font-size: 14px;">Email:</span>
+                                <a href="mailto:mdakeef2009@gmail.com">mdakeef2009@gmail.com</a>
+                            </div>
+                        </div>
+                        <div class="contact-info-item">
+                            <span style="font-size: 20px;">📱</span>
+                            <div>
+                                <span style="color: var(--text-secondary); font-size: 14px;">Phone:</span>
+                                <a href="tel:+919342903964">+91 9342903964</a>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <form id="contact-form" onsubmit="submitContactForm(event)">
+                        <div class="form-field">
+                            <label for="contact-name">Name *</label>
+                            <input type="text" id="contact-name" placeholder="Your name" class="input" required>
+                        </div>
+                        <div class="form-field">
+                            <label for="contact-email">Email *</label>
+                            <input type="email" id="contact-email" placeholder="your.email@example.com" class="input" required>
+                        </div>
+                        <div class="form-field">
+                            <label for="contact-phone">Phone</label>
+                            <input type="tel" id="contact-phone" placeholder="+1 (234) 567-890" class="input">
+                        </div>
+                        <div class="form-field">
+                            <label for="contact-message">Message *</label>
+                            <textarea id="contact-message" placeholder="Your message..." class="input" rows="5" required></textarea>
+                        </div>
+                        <div id="contact-form-message" style="margin-bottom: 16px; display: none;"></div>
+                        <div class="modal-footer" style="padding-top: 0; border-top: none;">
+                            <button type="button" onclick="closeContactModal()" class="btn btn-secondary">Cancel</button>
+                            <button type="submit" id="contact-submit-btn" class="btn btn-primary">Send Message</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Panel Modal -->
+    <div id="admin-modal" class="modal">
+        <div class="modal-content" style="max-width: 900px;">
+            <div class="modal-header">
+                <h3>Admin Panel - Contact Messages</h3>
+                <button class="modal-close" onclick="closeAdminModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <div id="admin-messages-container" style="max-height: 600px; overflow-y: auto;">
+                    <div id="admin-loading" style="text-align: center; padding: 40px;">
+                        <div class="loading-spinner"></div>
+                        <p style="margin-top: 16px; color: var(--text-secondary);">Loading messages...</p>
+                    </div>
+                    <div id="admin-messages-list" style="display: none;"></div>
+                    <div id="admin-empty-state" style="display: none; text-align: center; padding: 40px;">
+                        <p style="color: var(--text-secondary);">No contact messages yet.</p>
+                    </div>
+                </div>
+            </div>
+    </div>
+    </div>
+
+    <!-- Welcome Screen (shown when not authenticated) -->
+    <div id="welcome-screen" class="welcome-screen">
+        <div class="welcome-content">
+            <div class="logo-icon" style="width: 80px; height: 80px; font-size: 40px; margin: 0 auto 24px;">✨</div>
+            <h1 style="font-size: 36px; margin-bottom: 12px; background: var(--gradient-teal); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;">Finance Clarity</h1>
+            <p class="tagline" style="font-size: 18px; margin-bottom: 32px;">Know your money</p>
+            <p style="color: var(--text-secondary); margin-bottom: 32px; max-width: 500px; text-align: center;">
+                Track your income, expenses, and savings with clarity. Sign in to access your financial dashboard.
+            </p>
+            <button onclick="showAuthModal('signin')" class="btn btn-primary" style="padding: 16px 32px; font-size: 16px; margin-bottom: 12px;">
+                Sign In
+            </button>
+            <button onclick="showAuthModal('signup')" class="btn btn-secondary" style="padding: 16px 32px; font-size: 16px;">
+                Create Account
+            </button>
+            <p style="margin-top: 24px; font-size: 12px; color: var(--text-tertiary);">
+                Your data is securely stored and synced across devices
+            </p>
+        </div>
+    </div>
+
+    <!-- Add Income Modal -->
+    <div id="income-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Add Income Source</h3>
+                <button class="modal-close" onclick="closeIncomeModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-field">
+                    <label>Income Source Name</label>
+                    <input type="text" id="income-name" placeholder="e.g., Salary, Freelance" class="input">
+                </div>
+                <div class="form-field">
+                    <label>Monthly Amount</label>
+                    <div class="currency-input-wrapper">
+                        <span class="currency-symbol">₹</span>
+                        <input type="number" id="income-amount" placeholder="0.00" class="currency-input" step="0.01" min="0">
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button onclick="closeIncomeModal()" class="btn btn-secondary">Cancel</button>
+                <button onclick="addIncome()" class="btn btn-primary">Add Income</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Expense Modal -->
+    <div id="expense-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Add Fixed Expense</h3>
+                <button class="modal-close" onclick="closeExpenseModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-field">
+                    <label>Expense Name</label>
+                    <input type="text" id="expense-name" placeholder="e.g., Rent, EMI" class="input">
+                </div>
+                <div class="form-field">
+                    <label>Monthly Amount</label>
+                    <div class="currency-input-wrapper">
+                        <span class="currency-symbol">₹</span>
+                        <input type="number" id="expense-amount" placeholder="0.00" class="currency-input" step="0.01" min="0">
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button onclick="closeExpenseModal()" class="btn btn-secondary">Cancel</button>
+                <button onclick="addFixedExpense()" class="btn btn-primary">Add Expense</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="firebase-config.js"></script>
+    <script src="auth.js"></script>
+    <script src="script.js"></script> 
+    <script src="ai-insights.js"></script>
+    <script src="ai-chatbot.js"></script>
+    <script src="charts.js"></script>
+    <script src="animations.js"></script>
+    <script>
+        let selectedPurchaseType = 'one-time';
+        let isDataLoading = false;
+        let isInitialLoad = true;
+        let hasInitialized = false; // Prevent double initialization
+
+        // Centralized data loader - SINGLE INITIALIZATION ONLY
+        async function init() {
+            // Prevent double initialization
+            if (hasInitialized) {
+                return;
+            }
+            hasInitialized = true;
+            
+            isDataLoading = true;
+            
+            // Only load data if authenticated
+            if (typeof AuthManager !== 'undefined' && AuthManager.isAuthenticated() && AuthManager.currentUser) {
+            // PRIORITY 1: Load Financial Overview data immediately (from LocalStorage cache)
+            loadIncome();
+            loadFixedExpenses();
+            loadFlexibleSpending();
+            
+            // PRIORITY 2: Update dashboard immediately - smooth fade-in
+            updateDashboard();
+            } else {
+                // Not authenticated - ensure dashboard shows empty state
+                updateDashboard();
+            }
+            
+            isDataLoading = false;
+            isInitialLoad = false;
+            
+            // DEFER non-critical content using requestIdleCallback
+            if ('requestIdleCallback' in window) {
+                requestIdleCallback(() => {
+                    // Load recent activity (deferred)
+                    loadRecentActivity();
+                    
+                    // Initialize charts (deferred)
+                    requestAnimationFrame(() => {
+                        if (typeof ChartManager !== 'undefined') {
+                            if (!ChartManager.charts.expensePie) {
+                                ChartManager.initCharts();
+                            }
+                            // Initialize only primary chart first
+                            ChartManager.updateAllCharts();
+                        }
+                    });
+                }, { timeout: 1000 });
+            } else {
+                // Fallback for browsers without requestIdleCallback
+                setTimeout(() => {
+                    loadRecentActivity();
+                    requestAnimationFrame(() => {
+                    if (typeof ChartManager !== 'undefined') {
+                        if (!ChartManager.charts.expensePie) {
+                            ChartManager.initCharts();
+                        }
+                        ChartManager.updateAllCharts();
+                    }
+            });
+                }, 100);
+            }
+        }
+
+        // Modal Functions
+        function showAddIncomeModal() {
+            document.getElementById('income-modal').classList.add('active');
+        }
+
+        function closeIncomeModal() {
+            document.getElementById('income-modal').classList.remove('active');
+            document.getElementById('income-name').value = '';
+            document.getElementById('income-amount').value = '';
+        }
+
+        function showAddExpenseModal() {
+            document.getElementById('expense-modal').classList.add('active');
+        }
+
+        function closeExpenseModal() {
+            document.getElementById('expense-modal').classList.remove('active');
+            document.getElementById('expense-name').value = '';
+            document.getElementById('expense-amount').value = '';
+        }
+
+        // Close modals on outside click
+        window.onclick = function(event) {
+            const incomeModal = document.getElementById('income-modal');
+            const expenseModal = document.getElementById('expense-modal');
+            const aboutModal = document.getElementById('about-modal');
+            const contactModal = document.getElementById('contact-modal');
+            const adminModal = document.getElementById('admin-modal');
+            
+            if (event.target === incomeModal) {
+                closeIncomeModal();
+            }
+            if (event.target === expenseModal) {
+                closeExpenseModal();
+            }
+            if (event.target === aboutModal) {
+                closeAboutModal();
+            }
+            if (event.target === contactModal) {
+                closeContactModal();
+            }
+            if (event.target === adminModal) {
+                closeAdminModal();
+            }
+        }
+
+        // Purchase Type Selection
+        function selectPurchaseType(type) {
+            selectedPurchaseType = type;
+            document.querySelectorAll('.purchase-type-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.querySelector(`[data-type="${type}"]`).classList.add('active');
+        }
+
+        // Income Management
+        async function addIncome() {
+            const name = document.getElementById('income-name').value.trim();
+            const amount = document.getElementById('income-amount').value;
+            const submitBtn = document.querySelector('#income-modal .btn-primary');
+
+            if (!name || !amount || parseFloat(amount) <= 0) {
+                alert('Please enter a valid income source name and amount.');
+                return;
+            }
+
+            // Show loading state
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                const originalText = submitBtn.textContent;
+                submitBtn.textContent = 'Adding...';
+                
+                try {
+                    await DataManager.addIncomeSource({ name, amount });
+                    // Update charts
+                    setTimeout(() => {
+                        if (window.SafeChartManager && typeof SafeChartManager.updateAllCharts === 'function') {
+                            SafeChartManager.updateAllCharts();
+                        }
+                        if (window.ChartManager && typeof ChartManager.updateAllCharts === 'function') {
+                            ChartManager.updateAllCharts();
+                        }
+                    }, 100);
+                    closeIncomeModal();
+                    loadIncome();
+                    updateDashboard();
+                    loadRecentActivity();
+                    if (typeof ChartManager !== 'undefined') {
+                        ChartManager.updateAllCharts();
+                    }
+                } catch (error) {
+                    console.error('Error adding income:', error);
+                    alert('Error adding income. Please try again.');
+                } finally {
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = originalText;
+                }
+            } else {
+                // Fallback if button not found
+                DataManager.addIncomeSource({ name, amount });
+                // Update charts
+                setTimeout(() => {
+                    if (window.SafeChartManager && typeof SafeChartManager.updateAllCharts === 'function') {
+                        SafeChartManager.updateAllCharts();
+                    }
+                    if (window.ChartManager && typeof ChartManager.updateAllCharts === 'function') {
+                        ChartManager.updateAllCharts();
+                    }
+                }, 100);
+                closeIncomeModal();
+                loadIncome();
+                updateDashboard();
+                // Refresh history and recent activity
+                historyDataLoaded = false;
+                loadRecentActivity();
+                loadHistory(DataManager.getHistory());
+                if (typeof ChartManager !== 'undefined') {
+                    ChartManager.updateAllCharts();
+                }
+            }
+        }
+
+        function loadIncome() {
+            const income = DataManager.getIncome();
+            const container = document.getElementById('income-list');
+            
+            if (income.length === 0) {
+                container.className = 'empty-state';
+                container.innerHTML = '<p>No income sources added yet. Add your monthly income to get started.</p>';
+                return;
+            }
+
+            container.className = 'income-items-list';
+            container.innerHTML = income.map(item => `
+                <div class="income-item">
+                    <div class="item-content">
+                        <strong>${escapeHtml(item.name)}</strong>
+                        <span class="item-amount">₹${item.amount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                    </div>
+                    <button onclick="deleteIncome('${item.id}')" class="delete-btn">×</button>
+                </div>
+            `).join('');
+        }
+
+        function deleteIncome(id) {
+            if (confirm('Are you sure you want to delete this income source?')) {
+                DataManager.deleteIncomeSource(id);
+                loadIncome();
+                updateDashboard();
+                // Refresh history and recent activity
+                historyDataLoaded = false;
+                loadRecentActivity();
+                loadHistory(DataManager.getHistory());
+                if (typeof ChartManager !== 'undefined') {
+                    ChartManager.updateAllCharts();
+                }
+            }
+        }
+
+        // Fixed Expenses Management
+        async function addFixedExpense() {
+            const name = document.getElementById('expense-name').value.trim();
+            const amount = document.getElementById('expense-amount').value;
+            const submitBtn = document.querySelector('#expense-modal .btn-primary');
+
+            if (!name || !amount || parseFloat(amount) <= 0) {
+                alert('Please enter a valid expense name and amount.');
+                return;
+            }
+
+            // Show loading state on button
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Adding...';
+            }
+
+            try {
+                await DataManager.addFixedExpense({ name, amount });
+                closeExpenseModal();
+                loadFixedExpenses();
+                updateDashboard();
+                // Refresh history and recent activity
+                historyDataLoaded = false;
+                loadRecentActivity();
+                loadHistory(DataManager.getHistory());
+                if (typeof ChartManager !== 'undefined') {
+                    ChartManager.updateAllCharts();
+                }
+            } catch (error) {
+                console.error('Error adding expense:', error);
+                alert('Error adding expense. Please try again.');
+            } finally {
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Add Expense';
+                }
+            }
+        }
+
+        function loadFixedExpenses() {
+            const expenses = DataManager.getFixedExpenses();
+            const container = document.getElementById('expense-list');
+            
+            // Remove loading state
+            container.classList.remove('data-loading');
+            
+            if (expenses.length === 0) {
+                container.className = 'empty-state';
+                container.innerHTML = '<p>No fixed expenses added. Add recurring monthly obligations like rent, EMIs, or subscriptions.</p>';
+                return;
+            }
+
+            container.className = 'expense-items-list';
+            container.innerHTML = expenses.map(item => `
+                <div class="expense-item" style="animation: fadeInUp 0.3s ease;">
+                    <div class="item-content">
+                        <strong>${escapeHtml(item.name)}</strong>
+                        <span class="item-amount">₹${item.amount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                    </div>
+                    <button onclick="deleteFixedExpense('${item.id}')" class="delete-btn">×</button>
+                </div>
+            `).join('');
+        }
+
+        function deleteFixedExpense(id) {
+            if (confirm('Are you sure you want to delete this expense?')) {
+                DataManager.deleteFixedExpense(id);
+                loadFixedExpenses();
+                updateDashboard();
+                // Refresh history and recent activity
+                historyDataLoaded = false;
+                loadRecentActivity();
+                loadHistory(DataManager.getHistory());
+                if (typeof ChartManager !== 'undefined') {
+                    ChartManager.updateAllCharts();
+                }
+            }
+        }
+
+        // Flexible Spending Management
+        function loadFlexibleSpending() {
+            const spending = DataManager.getFlexibleSpending();
+            document.getElementById('food-limit').value = spending.food || '';
+            document.getElementById('travel-limit').value = spending.travel || '';
+            document.getElementById('shopping-limit').value = spending.shopping || '';
+            document.getElementById('misc-limit').value = spending.miscellaneous || '';
+        }
+
+        window.updateFlexibleSpending = function(category, amount) {
+            if (!window.DataManager || typeof DataManager.updateFlexibleSpending !== 'function') return;
+            DataManager.updateFlexibleSpending(category, amount);
+            
+            // Update charts after flexible spending changes
+            setTimeout(() => {
+                if (window.SafeChartManager && typeof SafeChartManager.updateAllCharts === 'function') {
+                    SafeChartManager.updateAllCharts();
+                }
+                if (window.ChartManager && typeof ChartManager.updateAllCharts === 'function') {
+                    ChartManager.updateAllCharts();
+                }
+            }, 100);
+            if (typeof updateDashboard === 'function') {
+                updateDashboard();
+            }
+            // Refresh charts
+            if (typeof ChartManager !== 'undefined' && typeof ChartManager.updateAllCharts === 'function') {
+                ChartManager.updateAllCharts();
+            }
+            // Refresh recent activity (DataManager.updateFlexibleSpending now handles history)
+            if (typeof loadRecentActivity === 'function') {
+                loadRecentActivity();
+            } else if (typeof window.renderRecentActivity === 'function') {
+                window.renderRecentActivity();
+            }
+        };
+
+        // Dashboard Update - optimized, prevents redundant updates
+        let lastDashboardUpdate = null;
+        function updateDashboard() {
+            const income = DataManager.getTotalIncome();
+            const fixed = DataManager.getTotalFixedExpenses();
+            const flexible = DataManager.getTotalFlexibleSpending();
+            const savings = DataManager.calculateSavings();
+            
+            // Prevent redundant updates (debounce)
+            const currentState = `${income}-${fixed}-${flexible}-${savings}`;
+            if (lastDashboardUpdate === currentState && !isInitialLoad) {
+                return; // Skip if nothing changed
+            }
+            
+            // Level 8: Update goals page if visible
+            const goalsView = document.getElementById('view-goals');
+            if (goalsView && goalsView.style.display !== 'none' && typeof window.renderGoalsPage === 'function') {
+                setTimeout(() => {
+                    try {
+                        window.renderGoalsPage();
+                    } catch (e) {
+                        // Silent fail
+                    }
+                }, 200);
+            }
+            lastDashboardUpdate = currentState;
+
+            // Update overview cards with instant updates (≤200ms fade-in only)
+            const updateCardValue = (elementId, value) => {
+                const element = document.getElementById(elementId);
+                if (!element) return;
+                
+                // Remove skeleton and loading class
+                element.classList.remove('loading');
+                const skeleton = element.querySelector('.skeleton-loader, .skeleton');
+                if (skeleton) {
+                    skeleton.remove();
+                }
+                element.classList.add('loaded');
+                
+                // Instant update for performance (no animation delay)
+                element.textContent = `₹${value.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+            };
+
+            updateCardValue('total-income', income);
+            updateCardValue('total-fixed', fixed);
+            updateCardValue('total-flexible', flexible);
+            updateCardValue('total-savings', savings);
+
+            const fixedPercentage = income > 0 ? ((fixed / income) * 100).toFixed(1) : 0;
+            const fixedPercElement = document.getElementById('fixed-percentage');
+            if (fixedPercElement) {
+                fixedPercElement.classList.remove('loading');
+                const skeleton = fixedPercElement.querySelector('.skeleton-loader, .skeleton');
+                if (skeleton) {
+                    skeleton.remove();
+                }
+                fixedPercElement.innerHTML = `${fixedPercentage}% of income`;
+                fixedPercElement.classList.add('loaded');
+            }
+
+            // Update section amounts
+            document.getElementById('income-section-amount').textContent = `₹${income.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+            document.getElementById('fixed-section-amount').textContent = `₹${fixed.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (${fixedPercentage}% of income)`;
+            document.getElementById('flexible-section-amount').textContent = `₹${flexible.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+            // Update savings section
+            document.getElementById('savings-display-amount').textContent = `₹${savings.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+            
+            // Update AI Summary
+            if (typeof window.AIChatbot !== 'undefined' && typeof window.AIChatbot.generateDashboardSummary === 'function') {
+                try {
+                    const context = window.AIChatbot.getUserFinancialContext();
+                    if (context) {
+                        const summary = window.AIChatbot.generateDashboardSummary(context);
+                        const summarySection = document.getElementById('ai-summary-section');
+                        const summaryContent = document.getElementById('ai-summary-content');
+                        if (summarySection && summaryContent) {
+                            summaryContent.innerHTML = `<p class="ai-summary-text">${summary}</p>`;
+                            summarySection.style.display = 'block';
+                        }
+                    }
+                } catch (e) {
+                    console.warn('AI summary generation failed:', e);
+                }
+            }
+            
+            let savingsTag = 'Zero';
+            let savingsWarning = 'No savings buffer. Any unexpected expense could cause financial stress.';
+            const savingsCard = document.getElementById('savings-section-card');
+            
+            if (savings < 0) {
+                savingsTag = 'Critical';
+                savingsWarning = 'Negative savings. Immediate action needed to restore financial stability.';
+                savingsCard.className = 'content-card savings-section critical';
+            } else if (savings === 0) {
+                savingsTag = 'Zero';
+                savingsWarning = 'No savings buffer. Any unexpected expense could cause financial stress.';
+                savingsCard.className = 'content-card savings-section zero';
+            } else {
+                const savingsPercentage = income > 0 ? (savings / income) * 100 : 0;
+                if (savingsPercentage >= 20) {
+                    savingsTag = 'Healthy';
+                    savingsWarning = 'Good savings buffer. You have a healthy financial cushion.';
+                    savingsCard.className = 'content-card savings-section healthy';
+                } else if (savingsPercentage >= 10) {
+                    savingsTag = 'Low';
+                    savingsWarning = 'Low savings buffer. Consider increasing your savings rate.';
+                    savingsCard.className = 'content-card savings-section low';
+                } else {
+                    savingsTag = 'Very Low';
+                    savingsWarning = 'Very low savings. Build your emergency fund to avoid financial stress.';
+                    savingsCard.className = 'content-card savings-section very-low';
+                }
+            }
+
+            document.getElementById('savings-tag').textContent = savingsTag;
+            document.getElementById('savings-warning').textContent = savingsWarning;
+
+            // Update savings rate progress bar with smooth animation
+            const savingsRate = income > 0 ? (savings / income) * 100 : 0;
+            const progressBar = document.getElementById('savings-progress-bar');
+            const progressText = document.getElementById('savings-rate-text');
+            progressText.textContent = `${Math.max(0, savingsRate).toFixed(1)}%`;
+            
+            // Use animated progress bar if AnimationManager is available
+            if (typeof AnimationManager !== 'undefined' && AnimationManager.animateProgressBar) {
+                AnimationManager.animateProgressBar(progressBar, Math.min(100, Math.max(0, savingsRate)));
+            } else {
+                // Fallback to CSS transition
+            progressBar.style.width = `${Math.min(100, Math.max(0, savingsRate))}%`;
+            }
+            
+            // Update charts if available
+            if (typeof ChartManager !== 'undefined') {
+                ChartManager.updateAllCharts();
+            }
+        }
+
+        // Affordability Check - using function from script.js
+        // checkAffordability() is already defined in script.js
+
+        // ============================================
+        // HISTORY MANAGEMENT - REFACTORED
+        // ============================================
+
+        let historyDataLoaded = false;
+        let allHistoryData = [];
+
+        // Legacy wrapper function for backward compatibility
+        function loadHistory(history = []) {
+            // Invalidate cached history
+            historyDataLoaded = false;
+            allHistoryData = history.length > 0 ? history : DataManager.getHistory();
+            
+            // Update recent activity when called
+            if (typeof loadRecentActivity === 'function') {
+                loadRecentActivity();
+            }
+            // Also update full history modal if it's open
+            if (typeof renderFullHistory === 'function') {
+                const modal = document.getElementById('history-modal');
+                if (modal && modal.classList.contains('active')) {
+                    renderFullHistory();
+                }
+            }
+        }
+
+        // Load and display recent activity (3-5 items)
+        function loadRecentActivity() {
+            const container = document.getElementById('recent-activity-container');
+            if (!container) return;
+
+            const history = DataManager.getHistory();
+            const recentItems = history.slice(0, 5);
+
+            if (recentItems.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state" style="padding: 40px 20px;">
+                        <div class="empty-icon">📋</div>
+                        <p style="font-size: 14px; color: var(--text-secondary);">No recent activity</p>
+            </div>
+        `;
+        return;
+    }
+
+            // Fade in effect instead of slide
+            container.style.opacity = '0';
+            container.innerHTML = recentItems.map(item => {
+                const type = getHistoryType(item);
+                const icon = getHistoryIcon(type);
+                const amountClass = type === 'income' || type === 'savings' ? 'positive' : 'negative';
+                const sign = type === 'income' || type === 'savings' ? '+' : '−';
+                const date = formatShortDate(item.dateTime || item.timestamp);
+
+                return `
+                    <div class="activity-item" style="opacity: 0;">
+                        <div class="activity-item-left">
+                            <div class="activity-icon-small ${type}">${icon}</div>
+                            <div class="activity-details">
+                                <div class="activity-category">${escapeHtml(item.category || item.name || 'Unknown')}</div>
+                                <div class="activity-action">${escapeHtml(item.action || '')}</div>
+            </div>
+                        </div>
+                        <div class="activity-item-right">
+                            <div>
+                                <div class="activity-amount ${amountClass}">${sign}₹${Math.abs(item.amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                                <div class="activity-date">${date}</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            // Fade in smoothly
+            requestAnimationFrame(() => {
+                container.style.transition = 'opacity 0.3s ease';
+                container.style.opacity = '1';
+                const items = container.querySelectorAll('.activity-item');
+                items.forEach((item, index) => {
+                    setTimeout(() => {
+                        item.style.transition = 'opacity 0.2s ease';
+                        item.style.opacity = '1';
+                    }, index * 50);
+                });
+            });
+
+            // Update view history button visibility
+            const viewBtn = document.getElementById('view-history-btn');
+            if (viewBtn) {
+                viewBtn.style.display = history.length > 5 ? 'block' : 'none';
+            }
+        }
+
+        // Open history modal with lazy loading
+        async function openHistoryModal() {
+            const modal = document.getElementById('history-modal');
+            if (!modal) return;
+
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+                
+                // Show loading state
+            const loadingEl = document.getElementById('history-modal-loading');
+            const contentEl = document.getElementById('history-modal-content');
+            const emptyEl = document.getElementById('history-empty-state');
+
+            if (loadingEl) loadingEl.style.display = 'block';
+            if (contentEl) contentEl.style.display = 'none';
+            if (emptyEl) emptyEl.style.display = 'none';
+
+            // Lazy load history data
+            if (!historyDataLoaded) {
+                await loadHistoryData();
+            }
+
+            // Render history
+            renderFullHistory();
+        }
+
+        // Close history modal
+        function closeHistoryModal() {
+            const modal = document.getElementById('history-modal');
+            if (modal) {
+                modal.style.opacity = '1';
+                modal.style.transform = 'scale(1)';
+                
+                requestAnimationFrame(() => {
+                    modal.style.transition = 'all 0.2s ease';
+                    modal.style.opacity = '0';
+                    modal.style.transform = 'scale(0.95)';
+                    
+                    setTimeout(() => {
+                        modal.classList.remove('active');
+                        modal.style.opacity = '';
+                        modal.style.transform = '';
+                        modal.style.transition = '';
+                        document.body.style.overflow = '';
+                    }, 200);
+                });
+            }
+        }
+
+        // Close modals when clicking outside
+        document.addEventListener('click', (e) => {
+            const historyModal = document.getElementById('history-modal');
+            const confirmModal = document.getElementById('confirm-clear-modal');
+            
+            if (historyModal && e.target === historyModal) {
+                closeHistoryModal();
+            }
+            if (confirmModal && e.target === confirmModal) {
+                closeConfirmClearModal();
+            }
+        });
+
+        // Load history data (lazy load)
+        async function loadHistoryData() {
+            try {
+                // Only load if authenticated
+                if (typeof AuthManager === 'undefined' || !AuthManager.isAuthenticated() || !AuthManager.currentUser) {
+                    allHistoryData = [];
+                    historyDataLoaded = true;
+                    return;
+                }
+
+                // Load from LocalStorage first (instant) - user-specific
+                allHistoryData = DataManager.getHistory();
+
+                // If authenticated, sync with Firestore
+                    try {
+                        const firestoreHistory = await AuthManager.loadHistoryFromFirestore();
+                        if (firestoreHistory && firestoreHistory.length > 0) {
+                            allHistoryData = firestoreHistory;
+                        }
+                    } catch (error) {
+                        console.warn('Error loading from Firestore, using local data:', error);
+                }
+
+                historyDataLoaded = true;
+            } catch (error) {
+                console.error('Error loading history data:', error);
+                allHistoryData = [];
+                historyDataLoaded = true;
+            }
+        }
+
+        // Render full history grouped by month and date
+        function renderFullHistory() {
+            const loadingEl = document.getElementById('history-modal-loading');
+            const contentEl = document.getElementById('history-modal-content');
+            const emptyEl = document.getElementById('history-empty-state');
+            const countEl = document.getElementById('history-count');
+
+            if (!contentEl || !loadingEl || !emptyEl) return;
+
+            // Hide loading
+            loadingEl.style.display = 'none';
+
+            if (allHistoryData.length === 0) {
+                emptyEl.style.display = 'block';
+                contentEl.style.display = 'none';
+                if (countEl) countEl.textContent = '0 transactions';
+                return;
+            }
+
+            // Update count
+            if (countEl) {
+                countEl.textContent = `${allHistoryData.length} transaction${allHistoryData.length !== 1 ? 's' : ''}`;
+            }
+
+            // Group by month and date
+            const grouped = groupHistoryByMonthDate(allHistoryData);
+
+            // Render grouped history
+            contentEl.innerHTML = Object.entries(grouped).map(([monthKey, dates]) => {
+                const monthTitle = formatMonthTitle(monthKey);
+                const monthCount = Object.values(dates).reduce((sum, entries) => sum + entries.length, 0);
+
+                return `
+                    <div class="history-month-group">
+                        <div class="history-month-header">
+                            <div class="history-month-title">${monthTitle}</div>
+                            <div class="history-month-count">${monthCount} transaction${monthCount !== 1 ? 's' : ''}</div>
+                        </div>
+                        ${Object.entries(dates).map(([dateKey, entries]) => `
+                            <div class="history-date-group">
+                                <div class="history-date-header">${formatDateHeader(dateKey)}</div>
+                                ${entries.map(entry => renderHistoryEntry(entry)).join('')}
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            }).join('');
+
+            contentEl.style.display = 'block';
+            emptyEl.style.display = 'none';
+        }
+
+        // Group history by month and date
+        function groupHistoryByMonthDate(history) {
+            const grouped = {};
+
+            history.forEach(entry => {
+                const date = new Date(entry.timestamp || entry.dateTime);
+                if (isNaN(date.getTime())) return;
+
+                const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+                const dateKey = date.toISOString().split('T')[0];
+
+                if (!grouped[monthKey]) {
+                    grouped[monthKey] = {};
+                }
+                if (!grouped[monthKey][dateKey]) {
+                    grouped[monthKey][dateKey] = [];
+                }
+
+                grouped[monthKey][dateKey].push(entry);
+            });
+
+            // Sort months (newest first)
+            const sorted = {};
+            Object.keys(grouped).sort().reverse().forEach(key => {
+                // Sort dates within month (newest first)
+                const sortedDates = {};
+                Object.keys(grouped[key]).sort().reverse().forEach(dateKey => {
+                    // Sort entries within date (newest first)
+                    sortedDates[dateKey] = grouped[key][dateKey].sort((a, b) => {
+                        const dateA = new Date(a.timestamp || a.dateTime);
+                        const dateB = new Date(b.timestamp || b.dateTime);
+                        return dateB - dateA;
+                    });
+                });
+                sorted[key] = sortedDates;
+            });
+
+            return sorted;
+        }
+
+        // Render single history entry
+        function renderHistoryEntry(entry) {
+            const type = getHistoryType(entry);
+            const icon = getHistoryIcon(type);
+            const amountClass = type === 'income' || type === 'savings' ? 'positive' : 'negative';
+            const sign = type === 'income' || type === 'savings' ? '+' : '−';
+            const time = formatTime(entry.dateTime || entry.timestamp);
+
+            return `
+                <div class="history-entry" data-entry-id="${entry.id || Date.now()}">
+                    <div class="history-entry-left">
+                        <div class="history-entry-icon ${type}">${icon}</div>
+                        <div class="history-entry-details">
+                            <div class="history-entry-name">${escapeHtml(entry.category || entry.name || 'Unknown')}</div>
+                            <div class="history-entry-meta">
+                                <span class="history-entry-category">${escapeHtml(entry.action || 'Transaction')}</span>
+                                <span class="history-entry-time">${time}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="history-entry-right">
+                        <div class="history-entry-amount ${amountClass}">${sign}$${Math.abs(entry.amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                        <button class="history-entry-delete" onclick="deleteHistoryEntry('${entry.id || Date.now()}')" title="Delete entry">
+                            🗑️
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Helper functions
+        function getHistoryType(entry) {
+            if (entry.type && entry.type.includes('income')) return 'income';
+            if (entry.type && entry.type.includes('savings')) return 'savings';
+            return 'expense';
+        }
+
+        function getHistoryIcon(type) {
+            const icons = {
+                income: '💰',
+                expense: '💸',
+                savings: '💎'
+            };
+            return icons[type] || '💸';
+        }
+
+        function formatShortDate(dateString) {
+            if (!dateString) return '';
+            const date = new Date(dateString);
+            if (isNaN(date.getTime())) return dateString;
+            const today = new Date();
+            const diffTime = today - date;
+            const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+            if (diffDays === 0) return 'Today';
+            if (diffDays === 1) return 'Yesterday';
+            if (diffDays < 7) return `${diffDays} days ago`;
+            return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        }
+
+        function formatMonthTitle(monthKey) {
+            const [year, month] = monthKey.split('-');
+            const date = new Date(year, parseInt(month) - 1);
+            return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+        }
+
+        function formatDateHeader(dateKey) {
+            const date = new Date(dateKey);
+            const today = new Date();
+            const yesterday = new Date(today);
+            yesterday.setDate(yesterday.getDate() - 1);
+
+            if (date.toDateString() === today.toDateString()) return 'Today';
+            if (date.toDateString() === yesterday.toDateString()) return 'Yesterday';
+            return date.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+        }
+
+        function formatTime(dateString) {
+            if (!dateString) return '';
+            const date = new Date(dateString);
+            if (isNaN(date.getTime())) return '';
+            return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+        }
+
+        // Delete single history entry
+        async function deleteHistoryEntry(entryId) {
+            if (!confirm('Are you sure you want to delete this transaction?')) return;
+
+            try {
+                const history = DataManager.getHistory();
+                const filtered = history.filter(entry => entry.id !== entryId);
+                
+                // Update LocalStorage with user-specific key
+                if (typeof AuthManager !== 'undefined' && AuthManager.currentUser && AuthManager.currentUser.uid) {
+                    const userKeys = DataManager._getUserKeys(AuthManager.currentUser.uid);
+                    localStorage.setItem(userKeys.HISTORY, JSON.stringify(filtered));
+                }
+                allHistoryData = filtered;
+
+                // Delete from Firestore if authenticated
+                if (typeof AuthManager !== 'undefined' && AuthManager.isAuthenticated()) {
+                    try {
+                        // Find the entry to get Firestore ID
+                        const entry = history.find(e => e.id === entryId);
+                        if (entry && entry.firestoreId) {
+                            // Note: You may need to add deleteHistoryEntry method to AuthManager
+                            // For now, we'll just update Firestore with the filtered list
+                            await AuthManager.saveHistoryEntry(entry); // This will be handled differently
+                        }
+                    } catch (error) {
+                        console.warn('Error deleting from Firestore:', error);
+                    }
+                }
+
+                // Update UI
+                loadRecentActivity();
+                renderFullHistory();
+            } catch (error) {
+                console.error('Error deleting history entry:', error);
+                alert('Error deleting entry. Please try again.');
+            }
+        }
+
+        // Confirm clear history modal
+        function confirmClearHistory() {
+            const modal = document.getElementById('confirm-clear-modal');
+            if (modal) {
+                modal.style.opacity = '0';
+                modal.style.transform = 'scale(0.9)';
+                modal.classList.add('active');
+                
+                requestAnimationFrame(() => {
+                    modal.style.transition = 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)';
+                    modal.style.opacity = '1';
+                    modal.style.transform = 'scale(1)';
+                });
+            }
+        }
+
+        function closeConfirmClearModal() {
+            const modal = document.getElementById('confirm-clear-modal');
+            if (modal) {
+                modal.style.opacity = '1';
+                modal.style.transform = 'scale(1)';
+                
+                requestAnimationFrame(() => {
+                    modal.style.transition = 'all 0.2s ease';
+                    modal.style.opacity = '0';
+                    modal.style.transform = 'scale(0.9)';
+                    
+                    setTimeout(() => {
+                        modal.classList.remove('active');
+                        modal.style.opacity = '';
+                        modal.style.transform = '';
+                        modal.style.transition = '';
+                    }, 200);
+                });
+            }
+        }
+
+        // Clear all history
+        async function clearAllHistory() {
+                try {
+                    await DataManager.clearHistory();
+                allHistoryData = [];
+                historyDataLoaded = false;
+
+                // Update UI
+                loadRecentActivity();
+                renderFullHistory();
+                closeConfirmClearModal();
+                closeHistoryModal();
+                } catch (error) {
+                    console.error('Error clearing history:', error);
+                    alert('Error clearing history. Please try again.');
+            }
+        }
+
+        // Export history
+        function exportHistory() {
+            if (allHistoryData.length === 0) {
+                alert('No history to export.');
+                return;
+            }
+
+            // Create CSV content
+            const headers = ['Date', 'Time', 'Category', 'Action', 'Amount', 'Type'];
+            const rows = allHistoryData.map(entry => {
+                const date = new Date(entry.timestamp || entry.dateTime);
+                return [
+                    date.toLocaleDateString('en-US'),
+                    date.toLocaleTimeString('en-US'),
+                    entry.category || entry.name || '',
+                    entry.action || '',
+                    entry.amount || 0,
+                    getHistoryType(entry)
+                ];
+            });
+
+            const csvContent = [
+                headers.join(','),
+                ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+            ].join('\n');
+
+            // Download CSV
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', `finance-history-${new Date().toISOString().split('T')[0]}.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // Reset Data
+        function resetPersonalData() {
+            if (confirm('Are you sure you want to reset all your personal financial data? This cannot be undone.')) {
+                // Clear all data
+                if (window.DataManager && typeof DataManager.resetAllData === 'function') {
+                    DataManager.resetAllData();
+                }
+                if (typeof historyDataLoaded !== 'undefined') {
+                    historyDataLoaded = false;
+                }
+                if (typeof allHistoryData !== 'undefined') {
+                    allHistoryData = [];
+                }
+                
+                // Reload all UI components immediately
+                if (typeof loadIncome === 'function') {
+                    loadIncome();
+                }
+                if (typeof loadFixedExpenses === 'function') {
+                    loadFixedExpenses();
+                }
+                if (typeof loadFlexibleSpending === 'function') {
+                    loadFlexibleSpending();
+                }
+                if (typeof updateDashboard === 'function') {
+                    updateDashboard();
+                }
+                if (typeof loadRecentActivity === 'function') {
+                    loadRecentActivity();
+                } else if (typeof window.renderRecentActivity === 'function') {
+                    window.renderRecentActivity();
+                }
+                if (typeof ChartManager !== 'undefined' && typeof ChartManager.updateAllCharts === 'function') {
+                    ChartManager.updateAllCharts();
+                }
+                
+                alert('All personal data has been reset.');
+            }
+        }
+
+        // Utility function
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Authentication Functions
+        let currentAuthTab = 'signin';
+
+        function showAuthModal(tab = 'signin') {
+            // Check Firebase availability and update UI
+            if (typeof AuthManager !== 'undefined' && typeof AuthManager.isFirebaseReady === 'function') {
+                const submitBtn = document.getElementById('auth-submit-btn');
+                const errorDiv = document.getElementById('auth-error');
+                
+                if (!AuthManager.isFirebaseReady()) {
+                    // Only show error if truly offline or file:// protocol
+                    const protocol = window.location.protocol;
+                    if (protocol === 'file:') {
+                        if (submitBtn) {
+                            submitBtn.disabled = true;
+                            submitBtn.setAttribute('data-original-text', submitBtn.textContent);
+                            submitBtn.textContent = 'Protocol Error';
+                        }
+                        if (errorDiv) {
+                            errorDiv.textContent = 'App must be run on HTTP/HTTPS. file:// is not supported.';
+                            errorDiv.style.display = 'block';
+                            errorDiv.style.color = '#ff4757';
+                        }
+                    } else if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+                        // Truly offline
+                        if (submitBtn) {
+                            submitBtn.disabled = true;
+                            submitBtn.setAttribute('data-original-text', submitBtn.textContent);
+                            submitBtn.textContent = 'Offline';
+                        }
+                        if (errorDiv) {
+                            errorDiv.textContent = 'You are offline. Please check your internet connection.';
+                            errorDiv.style.display = 'block';
+                            errorDiv.style.color = '#ff4757';
+                        }
+                    }
+                    // Don't show error if Firebase is just loading - wait for it
+                } else {
+                    if (submitBtn) {
+                        submitBtn.disabled = false;
+                        const originalText = submitBtn.getAttribute('data-original-text');
+                        if (originalText) {
+                            submitBtn.textContent = originalText;
+                        }
+                    }
+                    if (errorDiv) {
+                        errorDiv.textContent = '';
+                        errorDiv.style.display = 'none';
+                    }
+                }
+            }
+            
+            currentAuthTab = tab;
+            switchAuthTab(tab);
+            const modal = document.getElementById('auth-modal');
+            if (modal) {
+                modal.style.opacity = '0';
+                modal.style.transform = 'scale(0.9)';
+                modal.classList.add('active');
+                
+                requestAnimationFrame(() => {
+                    modal.style.transition = 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)';
+                    modal.style.opacity = '1';
+                    modal.style.transform = 'scale(1)';
+                });
+            }
+        }
+
+        function closeAuthModal() {
+            const modal = document.getElementById('auth-modal');
+            if (modal) {
+                modal.style.opacity = '1';
+                modal.style.transform = 'scale(1)';
+                
+                requestAnimationFrame(() => {
+                    modal.style.transition = 'all 0.2s ease';
+                    modal.style.opacity = '0';
+                    modal.style.transform = 'scale(0.9)';
+                    
+                    setTimeout(() => {
+                        modal.classList.remove('active');
+                        modal.style.opacity = '';
+                        modal.style.transform = '';
+                        modal.style.transition = '';
+                    }, 200);
+                });
+            }
+            
+            document.getElementById('auth-email').value = '';
+            document.getElementById('auth-password').value = '';
+            const errorDiv = document.getElementById('auth-error');
+            if (errorDiv) {
+                errorDiv.textContent = '';
+                errorDiv.style.display = 'none';
+            }
+        }
+
+        function switchAuthTab(tab) {
+            currentAuthTab = tab;
+            const tabs = document.querySelectorAll('.auth-tab');
+            tabs.forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            const title = document.getElementById('auth-modal-title');
+            const submitBtn = document.getElementById('auth-submit-btn');
+            
+            if (tab === 'signin') {
+                title.textContent = 'Sign In';
+                submitBtn.textContent = 'Sign In';
+            } else {
+                title.textContent = 'Sign Up';
+                submitBtn.textContent = 'Sign Up';
+            }
+        }
+
+        async function handleAuth() {
+            const email = document.getElementById('auth-email').value.trim();
+            const password = document.getElementById('auth-password').value;
+            const errorDiv = document.getElementById('auth-error');
+            const submitBtn = document.getElementById('auth-submit-btn');
+
+            // Check Firebase availability - but don't show generic network error
+            if (typeof AuthManager !== 'undefined' && typeof AuthManager.isFirebaseReady === 'function' && !AuthManager.isFirebaseReady()) {
+                // Only show error if truly offline or file:// protocol
+                const protocol = window.location.protocol;
+                if (protocol === 'file:') {
+                    const errorMsg = 'App must be run on HTTP/HTTPS. file:// is not supported.';
+                    if (typeof AuthAnimations !== 'undefined') {
+                        AuthAnimations.showAuthError(errorMsg);
+                    } else if (errorDiv) {
+                        errorDiv.textContent = errorMsg;
+                        errorDiv.style.display = 'block';
+                    }
+                    if (submitBtn) submitBtn.disabled = true;
+                    return;
+                }
+                // Check if truly offline
+                if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+                    const errorMsg = 'You are offline. Please check your internet connection.';
+                    if (typeof AuthAnimations !== 'undefined') {
+                        AuthAnimations.showAuthError(errorMsg);
+                    } else if (errorDiv) {
+                        errorDiv.textContent = errorMsg;
+                        errorDiv.style.display = 'block';
+                    }
+                    if (submitBtn) submitBtn.disabled = true;
+                    return;
+                }
+                // Firebase still loading - don't block, let it try (will show proper error if fails)
+            }
+
+            if (!email || !password) {
+                if (typeof AuthAnimations !== 'undefined') {
+                    AuthAnimations.showAuthError('Please enter both email and password.');
+                } else {
+                errorDiv.textContent = 'Please enter both email and password.';
+                }
+                return;
+            }
+
+            if (password.length < 6) {
+                if (typeof AuthAnimations !== 'undefined') {
+                    AuthAnimations.showAuthError('Password must be at least 6 characters.');
+                } else {
+                errorDiv.textContent = 'Password must be at least 6 characters.';
+                }
+                return;
+            }
+
+            errorDiv.textContent = '';
+            errorDiv.style.display = 'none';
+            
+            // Show loading animation
+            if (typeof AuthAnimations !== 'undefined') {
+                AuthAnimations.showAuthLoading();
+            } else {
+                const loadingDiv = document.getElementById('auth-loading');
+                if (loadingDiv) loadingDiv.style.display = 'block';
+                if (submitBtn) submitBtn.disabled = true;
+            }
+            // Level-10 polish: always disable submit during async, regardless of animation path
+            if (submitBtn) submitBtn.disabled = true;
+
+            let result;
+            try {
+            if (currentAuthTab === 'signup') {
+                result = await AuthManager.signUp(email, password);
+            } else {
+                result = await AuthManager.signIn(email, password);
+            }
+
+            if (result.success) {
+                if (typeof AuthAnimations !== 'undefined') {
+                    AuthAnimations.hideAuthLoading();
+                    AuthAnimations.showAuthSuccess(result.message);
+                }
+                
+                // Close modal immediately
+                closeAuthModal();
+                // Optional polish: toast success (does not alter layout)
+                try { window.FCToast?.success?.('Signed in successfully'); } catch (e) {}
+                
+                // Firebase onAuthStateChanged will handle screen switching and initialization
+                // No need for setTimeout - auth.js handles it
+                } else {
+                    if (typeof AuthAnimations !== 'undefined') {
+                        AuthAnimations.hideAuthLoading();
+                        AuthAnimations.showAuthError(result.error || 'Authentication failed. Please try again.');
+            } else {
+                errorDiv.textContent = result.error || 'Authentication failed. Please try again.';
+                    }
+                    // Re-enable submit on handled failure
+                    if (submitBtn) submitBtn.disabled = false;
+                }
+            } catch (error) {
+                if (typeof AuthAnimations !== 'undefined') {
+                    AuthAnimations.hideAuthLoading();
+                    // Use real error message when available (do not mask)
+                    AuthAnimations.showAuthError((error && error.message) ? error.message : 'An unexpected error occurred. Please try again.');
+                    if (submitBtn) submitBtn.disabled = false;
+                } else {
+                    // Use real error message when available (do not mask)
+                    errorDiv.textContent = (error && error.message) ? error.message : 'An unexpected error occurred. Please try again.';
+                    const loadingDiv = document.getElementById('auth-loading');
+                    if (loadingDiv) loadingDiv.style.display = 'none';
+                    if (submitBtn) submitBtn.disabled = false;
+                }
+            }
+        }
+
+        async function handleSignOut() {
+            if (confirm('Are you sure you want to sign out?')) {
+                await AuthManager.signOut();
+                showWelcomeScreen();
+            }
+        }
+
+        function showMainApp() {
+            const mainApp = document.getElementById("main-app");
+            const welcomeScreen = document.getElementById("welcome-screen");
+            
+            if (mainApp) mainApp.classList.remove("hidden");
+            if (welcomeScreen) welcomeScreen.classList.add("hidden");
+
+            // ✅ Load recent activity ONLY after UI exists
+            if (typeof loadRecentActivity === 'function' && typeof DataManager !== 'undefined') {
+                loadRecentActivity();
+            }
+        }
+
+        // About Us Modal Functions
+        function openAboutModal() {
+            const modal = document.getElementById('about-modal');
+            if (modal) {
+                modal.style.opacity = '0';
+                modal.style.transform = 'scale(0.95)';
+                modal.classList.add('active');
+                document.body.style.overflow = 'hidden';
+                
+                requestAnimationFrame(() => {
+                    modal.style.transition = 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)';
+                    modal.style.opacity = '1';
+                    modal.style.transform = 'scale(1)';
+                });
+            }
+        }
+
+        function closeAboutModal() {
+            const modal = document.getElementById('about-modal');
+            if (modal) {
+                modal.style.opacity = '1';
+                modal.style.transform = 'scale(1)';
+                
+                requestAnimationFrame(() => {
+                    modal.style.transition = 'all 0.2s ease';
+                    modal.style.opacity = '0';
+                    modal.style.transform = 'scale(0.95)';
+                    
+                    setTimeout(() => {
+                        modal.classList.remove('active');
+                        modal.style.opacity = '';
+                        modal.style.transform = '';
+                        modal.style.transition = '';
+                        document.body.style.overflow = '';
+                    }, 200);
+                });
+            }
+        }
+
+        // Contact Us Modal Functions
+        function openContactModal() {
+            const modal = document.getElementById('contact-modal');
+            if (modal) {
+                modal.style.opacity = '0';
+                modal.style.transform = 'scale(0.95)';
+                modal.classList.add('active');
+                document.body.style.overflow = 'hidden';
+                
+                requestAnimationFrame(() => {
+                    modal.style.transition = 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)';
+                    modal.style.opacity = '1';
+                    modal.style.transform = 'scale(1)';
+                });
+            }
+        }
+
+        function closeContactModal() {
+            const modal = document.getElementById('contact-modal');
+            if (modal) {
+                modal.style.opacity = '1';
+                modal.style.transform = 'scale(1)';
+                
+                requestAnimationFrame(() => {
+                    modal.style.transition = 'all 0.2s ease';
+                    modal.style.opacity = '0';
+                    modal.style.transform = 'scale(0.95)';
+                    
+                    setTimeout(() => {
+                        modal.classList.remove('active');
+                        modal.style.opacity = '';
+                        modal.style.transform = '';
+                        modal.style.transition = '';
+                        document.body.style.overflow = '';
+                    }, 200);
+                });
+            }
+            // Reset form
+            document.getElementById('contact-form').reset();
+            const msgDiv = document.getElementById('contact-form-message');
+            if (msgDiv) {
+                msgDiv.style.display = 'none';
+                msgDiv.textContent = '';
+            }
+        }
+
+        // Contact Form Submission - Saves to Firestore 'messages' collection
+        async function submitContactForm(event) {
+            event.preventDefault();
+            
+            const name = document.getElementById('contact-name').value.trim();
+            const email = document.getElementById('contact-email').value.trim();
+            const phone = document.getElementById('contact-phone').value.trim();
+            const message = document.getElementById('contact-message').value.trim();
+            const submitBtn = document.getElementById('contact-submit-btn');
+            const msgDiv = document.getElementById('contact-form-message');
+            
+            // Validate required fields
+            if (!name || !email || !message) {
+                msgDiv.style.display = 'block';
+                msgDiv.style.color = 'var(--accent-red)';
+                msgDiv.textContent = 'Please fill in all required fields (Name, Email, Message).';
+                return;
+            }
+            
+            // Validate email format
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(email)) {
+                msgDiv.style.display = 'block';
+                msgDiv.style.color = 'var(--accent-red)';
+                msgDiv.textContent = 'Please enter a valid email address.';
+                return;
+            }
+            
+            // Show loading state
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Sending...';
+            
+            try {
+                const user = AuthManager.isAuthenticated() ? AuthManager.currentUser : null;
+                const userId = user ? user.uid : "guest";
+                
+                // Save to Firestore 'contact_messages' collection (fixes error)
+                if (window.firebaseDb) {
+                    const messageData = {
+                        name: name,
+                        email: email,
+                        phone: phone || "", // Optional field
+                        message: message,
+                        userId: userId || null,
+                        timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                        read: false
+                    };
+                    
+                    await window.firebaseDb.collection('contact_messages').add(messageData);
+
+                    // Trigger serverless email notification (Firebase Hosting rewrite → Cloud Function)
+                    try {
+                        if (typeof window.sendContactEmailNotification === 'function') {
+                            window.sendContactEmailNotification({
+                                name,
+                                email,
+                                message,
+                                timestamp: new Date().toISOString()
+                            });
+                        }
+                    } catch (e) {
+                        // Graceful: don't break UX if email fails
+                    }
+                    
+                    // Success message
+                    msgDiv.style.display = 'block';
+                    msgDiv.style.color = 'var(--accent-green)';
+                    msgDiv.textContent = '✓ Message sent successfully! We\'ll get back to you soon.';
+                    
+                    // Reset form after delay
+                    setTimeout(() => {
+                        document.getElementById('contact-form').reset();
+                        closeContactModal();
+                    }, 2000);
+                } else {
+                    throw new Error('Database not available');
+                }
+            } catch (error) {
+                console.error('Error submitting contact form:', error);
+                let errorMessage = 'Error sending message. Please try again later.';
+                
+                // Handle Firestore permission errors gracefully
+                if (error.code === 'permission-denied') {
+                    errorMessage = 'Unable to send message. Please ensure you are logged in or try again later.';
+                } else if (error.message) {
+                    errorMessage = 'Error: ' + error.message;
+                }
+                
+                msgDiv.style.display = 'block';
+                msgDiv.style.color = 'var(--accent-red)';
+                msgDiv.style.background = 'rgba(255, 71, 87, 0.1)';
+                msgDiv.style.border = '1px solid var(--accent-red)';
+                msgDiv.textContent = errorMessage;
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Send Message';
+            }
+        }
+
+        // Admin Panel Functions
+        function openAdminModal() {
+            const modal = document.getElementById('admin-modal');
+            if (modal) {
+                modal.style.opacity = '0';
+                modal.style.transform = 'scale(0.95)';
+                modal.classList.add('active');
+                document.body.style.overflow = 'hidden';
+                
+                requestAnimationFrame(() => {
+                    modal.style.transition = 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)';
+                    modal.style.opacity = '1';
+                    modal.style.transform = 'scale(1)';
+                });
+                
+                setupMessagesListener();
+            }
+        }
+
+        // Setup real-time listener for messages (onSnapshot)
+        function setupMessagesListener() {
+            const loadingDiv = document.getElementById('admin-loading');
+            const messagesList = document.getElementById('admin-messages-list');
+            const emptyState = document.getElementById('admin-empty-state');
+            
+            // Check admin authentication
+            const user = AuthManager.isAuthenticated() ? AuthManager.currentUser : null;
+            if (!user || user.email !== 'mdakeef2009@gmail.com') {
+                emptyState.style.display = 'block';
+                loadingDiv.style.display = 'none';
+                emptyState.innerHTML = '<p style="color: var(--accent-red);">Unauthorized access. Admin only.</p>';
+                return;
+            }
+            
+            if (!window.firebaseDb) {
+                emptyState.style.display = 'block';
+                loadingDiv.style.display = 'none';
+                emptyState.innerHTML = '<p style="color: var(--accent-red);">Database not available.</p>';
+                return;
+            }
+            
+            // Unsubscribe from previous listener if exists
+            if (messagesUnsubscribe) {
+                messagesUnsubscribe();
+            }
+            
+            try {
+                loadingDiv.style.display = 'block';
+                messagesList.style.display = 'none';
+                emptyState.style.display = 'none';
+                
+                // Real-time listener: onSnapshot for instant updates
+                messagesUnsubscribe = window.firebaseDb.collection('contact_messages')
+                    .orderBy('timestamp', 'desc')
+                    .onSnapshot((snapshot) => {
+                        loadingDiv.style.display = 'none';
+                        
+                        if (snapshot.empty) {
+                            emptyState.style.display = 'block';
+                            messagesList.style.display = 'none';
+                            return;
+                        }
+                        
+                        emptyState.style.display = 'none';
+                        messagesList.style.display = 'block';
+                        
+                        // Sort: unread first, then by date
+                        const messages = snapshot.docs.map(doc => ({
+                            id: doc.id,
+                            ...doc.data()
+                        })).sort((a, b) => {
+                            // Unread messages first
+                            if (a.read !== b.read) {
+                                return a.read ? 1 : -1;
+                            }
+                            // Then by date (newest first)
+                            const dateA = a.timestamp ? (a.timestamp.toMillis ? a.timestamp.toMillis() : (a.timestamp.seconds ? a.timestamp.seconds * 1000 : 0)) : 0;
+                            const dateB = b.timestamp ? (b.timestamp.toMillis ? b.timestamp.toMillis() : (b.timestamp.seconds ? b.timestamp.seconds * 1000 : 0)) : 0;
+                            return dateB - dateA;
+                        });
+                        
+                        messagesList.innerHTML = messages.map(msg => {
+                            let timestamp;
+                            if (msg.timestamp) {
+                                if (msg.timestamp.toDate) {
+                                    timestamp = msg.timestamp.toDate();
+                                } else if (msg.timestamp.seconds) {
+                                    timestamp = new Date(msg.timestamp.seconds * 1000);
+                                } else {
+                                    timestamp = new Date();
+                                }
+                            } else {
+                                timestamp = new Date();
+                            }
+                            const dateStr = timestamp.toLocaleDateString('en-US', { 
+                                year: 'numeric', 
+                                month: 'short', 
+                                day: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                            });
+                            
+                            const isUnread = !msg.read;
+                            const bgColor = isUnread ? 'var(--bg-secondary)' : 'var(--bg-card)';
+                            const borderColor = isUnread ? 'var(--accent-teal)' : 'var(--border-color)';
+                            
+                            // Message preview (first 100 chars)
+                            const messagePreview = msg.message ? (msg.message.length > 100 ? msg.message.substring(0, 100) + '...' : msg.message) : '';
+                            
+                            return `
+                                <div class="contact-message-card" 
+                                     style="background: ${bgColor}; 
+                                            border: 2px solid ${borderColor}; 
+                                            border-radius: 12px; 
+                                            padding: 20px; 
+                                            margin-bottom: 16px;
+                                            cursor: pointer;
+                                            transition: all 0.2s ease;"
+                                     onclick="toggleMessageRead('${msg.id}', ${msg.read})">
+                                    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 12px;">
+                                        <div style="flex: 1;">
+                                            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                                                <h4 style="margin: 0; color: var(--text-primary);">${escapeHtml(msg.name || 'Anonymous')}</h4>
+                                                ${isUnread ? '<span style="background: var(--accent-teal); color: white; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 600;">NEW</span>' : ''}
+                                            </div>
+                                            <p style="margin: 0 0 4px 0; color: var(--text-secondary); font-size: 14px;">
+                                                📧 ${escapeHtml(msg.email || 'No email')}
+                                            </p>
+                                            ${msg.phone ? `<p style="margin: 0 0 4px 0; color: var(--text-secondary); font-size: 14px;">📱 ${escapeHtml(msg.phone)}</p>` : ''}
+                                            <p style="margin: 0; color: var(--text-tertiary); font-size: 12px;">🕒 ${dateStr}</p>
+                                        </div>
+                                        <span style="color: ${isUnread ? 'var(--accent-teal)' : 'var(--text-tertiary)'}; font-size: 12px; font-weight: ${isUnread ? '600' : '400'};">
+                                            ${isUnread ? 'Unread' : 'Read'}
+                                        </span>
+                                    </div>
+                                    <p style="margin: 0; color: var(--text-primary); line-height: 1.6; white-space: pre-wrap;">${escapeHtml(messagePreview)}</p>
+                                    ${msg.userId && msg.userId !== 'guest' ? `<p style="margin-top: 8px; font-size: 12px; color: var(--text-tertiary);">User ID: ${msg.userId}</p>` : '<p style="margin-top: 8px; font-size: 12px; color: var(--text-tertiary);">Guest user</p>'}
+                                </div>
+                            `;
+                        }).join('');
+                    }, (error) => {
+                        console.error('Error in messages listener:', error);
+                        loadingDiv.style.display = 'none';
+                        emptyState.style.display = 'block';
+                        emptyState.innerHTML = '<p style="color: var(--accent-red);">Error loading messages. Please try again.</p>';
+                    });
+            } catch (error) {
+                console.error('Error setting up messages listener:', error);
+                loadingDiv.style.display = 'none';
+                emptyState.style.display = 'block';
+                emptyState.innerHTML = '<p style="color: var(--accent-red);">Error loading messages. Please try again.</p>';
+            }
+        }
+        
+        // Toggle read/unread status
+        async function toggleMessageRead(messageId, currentReadStatus) {
+            const user = AuthManager.isAuthenticated() ? AuthManager.currentUser : null;
+            if (!user || user.email !== 'mdakeef2009@gmail.com') {
+                return; // Only admins can mark messages as read
+            }
+            
+            if (!window.firebaseDb) {
+                return;
+            }
+            
+            try {
+                // Toggle read status
+                await window.firebaseDb.collection('contact_messages').doc(messageId).update({
+                    read: !currentReadStatus
+                });
+                // Real-time listener will automatically update UI
+            } catch (error) {
+                console.error('Error updating message read status:', error);
+                alert('Error updating message status. Please try again.');
+            }
+        }
+
+        // Check if user is admin and show admin button
+        function checkAdminAccess() {
+            const user = AuthManager.isAuthenticated() ? AuthManager.currentUser : null;
+            const adminBtn = document.getElementById('admin-btn');
+            
+            if (adminBtn && user && user.email === 'mdakeef2009@gmail.com') {
+                adminBtn.style.display = 'flex';
+            } else if (adminBtn) {
+                adminBtn.style.display = 'none';
+            }
+}
+            
+            // Initialize with proper loading states
+            async function initializeApp() {
+                await init();
+            }
+
+            function showWelcomeScreen() {
+                document.getElementById('main-app').classList.add('hidden');
+                document.getElementById('welcome-screen').classList.remove('hidden');
+                }
+            
+            // Check authentication state on load - SINGLE listener (no duplicates)
+            // Note: Firebase onAuthStateChanged in auth.js handles initialization
+            AuthManager.onAuthStateChange(async (user) => {
+                if (user) {
+                    // User is authenticated - wait for data to load before showing UI
+                    if (AuthManager.hasLoadedInitialData) {
+                    showMainApp();
+                    checkAdminAccess();
+                    }
+            } else {
+                    // User is not authenticated - show welcome screen and reset everything
+                showWelcomeScreen();
+                    checkAdminAccess();
+                    // Reset initialization flag on sign out
+                    window.hasInitialized = false;
+                    hasInitialized = false;
+                }
+            });
+
+        // Check admin access on load
+        checkAdminAccess();
+
+        // ============================================
+        // MOBILE MENU FUNCTIONS (MUST BE GLOBAL)
+        // ============================================
+        window.toggleMobileMenu = function() {
+            const menuToggle = document.querySelector('.mobile-menu-toggle');
+            const headerActions = document.getElementById('header-actions');
+            
+            if (menuToggle && headerActions) {
+                menuToggle.classList.toggle('active');
+                headerActions.classList.toggle('active');
+            }
+        };
+
+        window.closeMobileMenu = function() {
+            const menuToggle = document.querySelector('.mobile-menu-toggle');
+            const headerActions = document.getElementById('header-actions');
+            
+            if (menuToggle && headerActions) {
+                menuToggle.classList.remove('active');
+                headerActions.classList.remove('active');
+            }
+        };
+
+        // Close mobile menu on outside click
+        document.addEventListener('click', (e) => {
+            const menuToggle = document.querySelector('.mobile-menu-toggle');
+            const headerActions = document.getElementById('header-actions');
+            
+            if (menuToggle && headerActions && 
+                !menuToggle.contains(e.target) && 
+                !headerActions.contains(e.target) &&
+                headerActions.classList.contains('active')) {
+                window.closeMobileMenu();
+            }
+        });
+
+        // ============================================
+        // CLIENT-SIDE ROUTING SYSTEM
+        // ============================================
+        let currentView = 'dashboard';
+        
+        // ============================================
+        // SAFE PAGE SWITCH SYSTEM (STRUCTURAL)
+        // ============================================
+        window.navigateTo = function(view) {
+            try {
+            // Close mobile menu when navigating
+            if (typeof window.closeMobileMenu === 'function') {
+                window.closeMobileMenu();
+            }
+            
+            // Hide ALL pages using display: none (structural fix - prevents overlapping)
+            document.querySelectorAll('.page-view').forEach(v => {
+                v.classList.remove('active');
+                v.style.display = 'none';
+            });
+            
+            // Remove active class from nav buttons
+            document.querySelectorAll('.header-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Show ONLY the target view using display: block
+            const targetView = document.getElementById(`view-${view}`);
+            if (targetView) {
+                targetView.style.display = 'block';
+                targetView.classList.add('active');
+                
+                // Level 8: Render goals when navigating to goals page
+                if (view === 'goals' && typeof window.renderGoalsPage === 'function') {
+                    setTimeout(() => {
+                        window.renderGoalsPage();
+                    }, 100);
+                }
+                
+                if (typeof currentView !== 'undefined') {
+                    currentView = view;
+                }
+                
+                // Update active nav button
+                const navBtn = document.getElementById(`nav-${view}`);
+                if (navBtn) {
+                    navBtn.classList.add('active');
+                }
+                    
+                    // Update charts when showing dashboard
+                    if (view === 'dashboard') {
+                        setTimeout(() => {
+                            if (window.SafeChartManager && typeof SafeChartManager.updateAllCharts === 'function') {
+                                SafeChartManager.updateAllCharts();
+                            }
+                            if (window.ChartManager && typeof ChartManager.updateAllCharts === 'function') {
+                                ChartManager.updateAllCharts();
+                            }
+                        }, 150);
+                }
+                
+                // Scroll to top smoothly
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            } else {
+                console.warn(`Page view '${view}' not found`);
+                }
+            } catch (e) {
+                console.warn('Navigation error:', e);
+            }
+        };
+        
+        // Alias for backward compatibility
+        window.showPage = window.navigateTo;
+        
+        // Contact form submission for page view
+        window.submitContactFormPage = async function(event) {
+            if (event) {
+            event.preventDefault();
+            }
+            
+            try {
+            const nameInput = document.getElementById('contact-page-name');
+            const emailInput = document.getElementById('contact-page-email');
+            const messageInput = document.getElementById('contact-page-message');
+            const submitBtn = document.getElementById('contact-page-submit-btn');
+            const msgDiv = document.getElementById('contact-page-form-message');
+
+            if (!nameInput || !emailInput || !messageInput || !submitBtn || !msgDiv) {
+                    console.warn('Contact form elements not found');
+                return;
+            }
+
+            const name = nameInput.value.trim();
+            const email = emailInput.value.trim();
+            const message = messageInput.value.trim();
+            
+            // Validate required fields
+            if (!name || !email || !message) {
+                msgDiv.style.display = 'block';
+                msgDiv.style.color = 'var(--accent-red)';
+                msgDiv.style.background = 'rgba(255, 71, 87, 0.1)';
+                msgDiv.style.border = '1px solid var(--accent-red)';
+                msgDiv.textContent = 'Please fill in all required fields (Name, Email, Message).';
+                return;
+            }
+            
+            // Validate email format
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(email)) {
+                msgDiv.style.display = 'block';
+                msgDiv.style.color = 'var(--accent-red)';
+                msgDiv.style.background = 'rgba(255, 71, 87, 0.1)';
+                msgDiv.style.border = '1px solid var(--accent-red)';
+                msgDiv.textContent = 'Please enter a valid email address.';
+                return;
+            }
+            
+            // Show loading state with spinner
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span style="display: inline-block; width: 16px; height: 16px; border: 2px solid currentColor; border-top-color: transparent; border-radius: 50%; animation: spin 0.6s linear infinite; margin-right: 8px;"></span>Sending...';
+            
+            // Simulate form submission (no backend required)
+            setTimeout(() => {
+                try {
+                    // Save message to Firestore (if available) and trigger email notification
+                    try {
+                        if (window.firebaseDb) {
+                            const messageData = {
+                                name: name,
+                                email: email,
+                                phone: "",
+                                message: message,
+                                userId: (typeof AuthManager !== 'undefined' && AuthManager.isAuthenticated() && AuthManager.currentUser) ? AuthManager.currentUser.uid : "guest",
+                                timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                                read: false
+                            };
+                            window.firebaseDb.collection('contact_messages').add(messageData);
+                        }
+                        if (typeof window.sendContactEmailNotification === 'function') {
+                            window.sendContactEmailNotification({
+                                name,
+                                email,
+                                message,
+                                timestamp: new Date().toISOString()
+                            });
+                        }
+                    } catch (e) {
+                        // Graceful: do not block UI success message
+                    }
+
+                    // Success message
+                    msgDiv.style.display = 'block';
+                    msgDiv.style.color = 'var(--accent-green)';
+                    msgDiv.style.background = 'rgba(46, 213, 115, 0.1)';
+                    msgDiv.style.border = '1px solid var(--accent-green)';
+                    msgDiv.textContent = '✓ Message sent successfully! We\'ll get back to you soon.';
+                    
+                    // Reset form after delay
+                    setTimeout(() => {
+                        const form = document.getElementById('contact-page-form');
+                        if (form) {
+                            form.reset();
+                        }
+                        msgDiv.style.display = 'none';
+                    }, 3000);
+            } catch (error) {
+                    if (msgDiv) {
+                msgDiv.style.display = 'block';
+                msgDiv.style.color = 'var(--accent-red)';
+                msgDiv.style.background = 'rgba(255, 71, 87, 0.1)';
+                msgDiv.style.border = '1px solid var(--accent-red)';
+                        msgDiv.textContent = 'Error processing message. Please try again.';
+                    }
+            } finally {
+                    if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Send Message';
+                    }
+                }
+            }, 500);
+            } catch (e) {
+                console.warn('Contact form submission error:', e);
+            }
+        }
+
+        // Serverless email notification helper (Firebase Hosting → Cloud Function rewrite)
+        window.sendContactEmailNotification = async function(payload) {
+            try {
+                await fetch('/sendContactEmail', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload || {})
+                });
+            } catch (e) {
+                // Non-fatal: email notification failure must not break UX
+            }
+        };
+        
+        // ============================================
+        // BACKWARD COMPATIBILITY FUNCTIONS (MODALS)
+        // ============================================
+        window.openAboutModal = function() {
+            if (typeof window.navigateTo === 'function') {
+                window.navigateTo('about');
+            }
+        };
+        
+        window.openContactModal = function() {
+            if (typeof window.navigateTo === 'function') {
+                window.navigateTo('contact');
+            }
+        };
+        
+        window.closeAboutModal = function() {
+            if (typeof window.navigateTo === 'function') {
+                window.navigateTo('dashboard');
+            }
+        };
+        
+        window.closeContactModal = function() {
+            if (typeof window.navigateTo === 'function') {
+                window.navigateTo('dashboard');
+            }
+        };
+
+        // ============================================
+        // SAFE NAVIGATION INITIALIZATION
+        // ============================================
+        function initializeRouting() {
+            // Only initialize routing if user is authenticated
+            if (typeof AuthManager !== 'undefined' && AuthManager.isAuthenticated()) {
+                if (typeof window.navigateTo === 'function') {
+                    window.navigateTo('dashboard');
+                }
+            }
+        }
+        
+        // Initialize routing when DOM is ready
+        function initializePageViews() {
+            // Ensure only dashboard is visible on initial load
+            document.querySelectorAll('.page-view').forEach(v => {
+                if (v.id === 'view-dashboard') {
+                    v.style.display = 'block';
+                    v.classList.add('active');
+                } else {
+                    v.style.display = 'none';
+                    v.classList.remove('active');
+                }
+            });
+            
+            // Set active nav button
+            document.querySelectorAll('.header-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            const dashboardBtn = document.getElementById('nav-dashboard');
+            if (dashboardBtn) {
+                dashboardBtn.classList.add('active');
+            }
+        }
+        
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', function() {
+                initializePageViews();
+                if (typeof initializeRouting === 'function') {
+                    initializeRouting();
+                }
+                // Initialize charts after a short delay
+                setTimeout(() => {
+                    if (window.SafeChartManager && typeof SafeChartManager.updateAllCharts === 'function') {
+                        SafeChartManager.updateAllCharts();
+                    }
+                    if (window.ChartManager && typeof ChartManager.updateAllCharts === 'function') {
+                        ChartManager.updateAllCharts();
+                    }
+                }, 300);
+            });
+        } else {
+            initializePageViews();
+            if (typeof initializeRouting === 'function') {
+                initializeRouting();
+            }
+            // Initialize charts after a short delay
+            setTimeout(() => {
+                if (window.SafeChartManager && typeof SafeChartManager.updateAllCharts === 'function') {
+                    SafeChartManager.updateAllCharts();
+                }
+                if (window.ChartManager && typeof ChartManager.updateAllCharts === 'function') {
+                    ChartManager.updateAllCharts();
+                }
+            }, 300);
+        }
+
+        // Initialize on page load
+        // init() will be called after authentication
+    </script>
+
+    <!--===================== FIX: RECENT ACTIVITY RENDER ===================== -->
+    <script>
+    if (window.DataManager && !DataManager.getHistory) {
+        DataManager.getHistory = function () {
+            try {
+                if (typeof AuthManager !== 'undefined' && AuthManager.currentUser && AuthManager.currentUser.uid) {
+                    const userKeys = DataManager._getUserKeys(AuthManager.currentUser.uid);
+                    return JSON.parse(localStorage.getItem(userKeys.HISTORY)) || [];
+                }
+                return [];
+            } catch {
+                return [];
+            }
+        };
+    }
+    
+    // Use renderRecentActivity from script.js
+    AuthManager.onAuthStateChange(() => {
+        setTimeout(() => {
+            if (typeof window.renderRecentActivity === 'function') {
+                window.renderRecentActivity();
+            }
+        }, 300);
+    });
+    </script>
+    
+    <!-- ===================== AI CHATBOT UI ===================== -->
+    <script>
+    window.AIChatbotUI = {
+        isOpen: false,
+
+        init() {
+            // Initialize chatbot service
+            if (typeof window.AIChatbot !== 'undefined') {
+                window.AIChatbot.init();
+            }
+        },
+
+        toggleChat() {
+            this.isOpen = !this.isOpen;
+            const panel = document.getElementById('ai-chatbot-panel');
+            const toggle = document.getElementById('ai-chatbot-toggle');
+            
+            if (!panel || !toggle) return;
+
+            if (this.isOpen) {
+                panel.classList.remove('hidden');
+                toggle.classList.add('active');
+                
+                // Show welcome message if first time
+                const messagesContainer = document.getElementById('ai-chatbot-messages');
+                if (messagesContainer && messagesContainer.children.length === 0) {
+                    const hasOpened = sessionStorage.getItem('chatbot_opened');
+                    if (!hasOpened) {
+                        this.addWelcomeMessage();
+                        sessionStorage.setItem('chatbot_opened', 'true');
+                    } else {
+                        this.updateSuggestedQuestions();
+                    }
+                } else {
+                    this.updateSuggestedQuestions();
+                }
+
+                // Focus input
+                setTimeout(() => {
+                    const input = document.getElementById('ai-chatbot-input');
+                    if (input) input.focus();
+                }, 100);
+            } else {
+                panel.classList.add('hidden');
+                toggle.classList.remove('active');
+            }
+        },
+
+        addWelcomeMessage() {
+            const messagesContainer = document.getElementById('ai-chatbot-messages');
+            if (!messagesContainer) return;
+
+            const welcomeMsg = document.createElement('div');
+            welcomeMsg.className = 'ai-chatbot-message ai-chatbot-message-assistant';
+            welcomeMsg.innerHTML = `
+                <div class="ai-chatbot-message-content">
+                    <p>Hi! I'm your AI Finance Assistant. I can help you understand your finances by analyzing your income, expenses, savings, and spending patterns.</p>
+                </div>
+            `;
+            messagesContainer.appendChild(welcomeMsg);
+            this.updateSuggestedQuestions();
+            this.scrollToBottom();
+        },
+
+        updateSuggestedQuestions() {
+            const suggestionsContainer = document.getElementById('ai-chatbot-suggestions');
+            const messagesContainer = document.getElementById('ai-chatbot-messages');
+            if (!suggestionsContainer) return;
+
+            // Only show suggestions if there are no messages (or only welcome message)
+            if (messagesContainer && messagesContainer.children.length > 1) {
+                suggestionsContainer.style.display = 'none';
+                return;
+            }
+
+            try {
+                if (typeof window.AIChatbot === 'undefined' || typeof window.AIChatbot.getUserFinancialContext !== 'function') {
+                    suggestionsContainer.innerHTML = '';
+                    suggestionsContainer.style.display = 'none';
+                    return;
+                }
+
+                const context = window.AIChatbot.getUserFinancialContext();
+                if (!context) {
+                    suggestionsContainer.innerHTML = '';
+                    suggestionsContainer.style.display = 'none';
+                    return;
+                }
+
+                const suggestions = window.AIChatbot.generateSuggestedQuestions(context);
+                if (suggestions.length === 0) {
+                    suggestionsContainer.innerHTML = '';
+                    suggestionsContainer.style.display = 'none';
+                    return;
+                }
+
+                suggestionsContainer.style.display = 'flex';
+                suggestionsContainer.innerHTML = suggestions.map((suggestion, index) => {
+                    const safeText = this.sanitizeText(suggestion);
+                    return `<button class="ai-chatbot-suggestion-btn" data-suggestion-index="${index}">${safeText}</button>`;
+                }).join('');
+
+                // Add event listeners
+                suggestionsContainer.querySelectorAll('.ai-chatbot-suggestion-btn').forEach((btn, index) => {
+                    btn.addEventListener('click', () => {
+                        this.sendSuggestion(suggestions[index]);
+                    });
+                });
+            } catch (e) {
+                console.warn('Failed to update suggestions:', e);
+                suggestionsContainer.innerHTML = '';
+                suggestionsContainer.style.display = 'none';
+            }
+        },
+
+        sendSuggestion(suggestion) {
+            const input = document.getElementById('ai-chatbot-input');
+            if (input && suggestion) {
+                input.value = suggestion;
+                this.sendMessage();
+            }
+        },
+
+        async sendMessage() {
+            const input = document.getElementById('ai-chatbot-input');
+            if (!input) return;
+
+            const message = input.value.trim();
+            if (!message) return;
+
+            // Add user message
+            this.addMessage(message, 'user');
+            input.value = '';
+
+            // Show typing indicator
+            const typingId = this.showTypingIndicator();
+
+            try {
+                // Process message
+                let response = 'I\'m having trouble processing your question right now. Please try again.';
+                
+                if (typeof window.AIChatbot !== 'undefined' && typeof window.AIChatbot.processMessage === 'function') {
+                    response = await window.AIChatbot.processMessage(message);
+                }
+
+                // Remove typing indicator
+                this.removeTypingIndicator(typingId);
+
+                // Add AI response
+                this.addMessage(response, 'assistant');
+                
+                // Update suggested questions after response
+                this.updateSuggestedQuestions();
+            } catch (e) {
+                console.warn('Chatbot error:', e);
+                this.removeTypingIndicator(typingId);
+                this.addMessage('I encountered an error. Please try again.', 'assistant');
+            }
+        },
+
+        addMessage(text, role) {
+            const messagesContainer = document.getElementById('ai-chatbot-messages');
+            if (!messagesContainer) return;
+
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `ai-chatbot-message ai-chatbot-message-${role}`;
+            
+            // Sanitize text (basic XSS prevention)
+            const sanitized = this.sanitizeText(text);
+            
+            // Convert newlines to <br> and preserve formatting
+            const formatted = sanitized.replace(/\n/g, '<br>');
+            
+            messageDiv.innerHTML = `
+                <div class="ai-chatbot-message-content">
+                    ${formatted}
+                </div>
+            `;
+
+            messagesContainer.appendChild(messageDiv);
+            
+            // Hide suggestions when there are messages
+            const suggestionsContainer = document.getElementById('ai-chatbot-suggestions');
+            if (suggestionsContainer && messagesContainer.children.length > 1) {
+                suggestionsContainer.style.display = 'none';
+            }
+            
+            this.scrollToBottom();
+        },
+
+        showTypingIndicator() {
+            const messagesContainer = document.getElementById('ai-chatbot-messages');
+            if (!messagesContainer) return null;
+
+            const typingDiv = document.createElement('div');
+            typingDiv.className = 'ai-chatbot-message ai-chatbot-message-assistant ai-chatbot-typing';
+            typingDiv.id = 'ai-chatbot-typing-indicator';
+            typingDiv.innerHTML = `
+                <div class="ai-chatbot-message-content">
+                    <span class="ai-chatbot-typing-dots">
+                        <span></span><span></span><span></span>
+                    </span>
+                </div>
+            `;
+            messagesContainer.appendChild(typingDiv);
+            this.scrollToBottom();
+            return 'ai-chatbot-typing-indicator';
+        },
+
+        removeTypingIndicator(id) {
+            if (!id) return;
+            const indicator = document.getElementById(id);
+            if (indicator) {
+                indicator.remove();
+            }
+        },
+
+        scrollToBottom() {
+            const messagesContainer = document.getElementById('ai-chatbot-messages');
+            if (messagesContainer) {
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            }
+        },
+
+        sanitizeText(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    };
+
+    // Initialize chatbot UI when DOM is ready
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => {
+            window.AIChatbotUI.init();
+        });
+    } else {
+        window.AIChatbotUI.init();
+    }
+
+    // Generate monthly report function (can be called from UI)
+    window.generateMonthlyReport = function() {
+        if (typeof window.AIChatbot === 'undefined' || typeof window.AIChatbot.getUserFinancialContext !== 'function') {
+            alert('AI service is not available. Please try again later.');
+            return;
+        }
+
+        try {
+            const context = window.AIChatbot.getUserFinancialContext();
+            if (!context) {
+                alert('Please add some financial data first to generate a report.');
+                return;
+            }
+
+            const report = window.AIChatbot.generateMonthlyReport(context);
+            
+            // Format report for display
+            const monthName = new Date(report.month + '-01').toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
+            let reportText = `Monthly Financial Report - ${monthName}\n\n`;
+            reportText += `Total Income: ₹${report.totalIncome.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}\n`;
+            reportText += `Total Expenses: ₹${report.totalExpenses.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}\n`;
+            reportText += `Total Savings: ₹${report.totalSavings.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}\n`;
+            reportText += `Savings Rate: ${report.savingsRate}%\n\n`;
+
+            if (report.bestCategory) {
+                reportText += `Best Managed Category: ${report.bestCategory.name} (₹${report.bestCategory.amount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })})\n`;
+            }
+            if (report.worstCategory) {
+                reportText += `Highest Spending Category: ${report.worstCategory.name} (₹${report.worstCategory.amount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })})\n`;
+            }
+
+            reportText += '\nInsights:\n';
+            report.insights.forEach(insight => {
+                reportText += `• ${insight}\n`;
+            });
+
+            reportText += '\nSuggestions:\n';
+            report.suggestions.forEach(suggestion => {
+                reportText += `• ${suggestion}\n`;
+            });
+
+            // Show in chatbot or alert
+            if (window.AIChatbotUI && window.AIChatbotUI.isOpen) {
+                window.AIChatbotUI.addMessage(reportText, 'assistant');
+            } else {
+                // Open chatbot and show report
+                window.AIChatbotUI.toggleChat();
+                setTimeout(() => {
+                    window.AIChatbotUI.addMessage(reportText, 'assistant');
+                }, 300);
+            }
+        } catch (e) {
+            console.warn('Report generation failed:', e);
+            alert('Failed to generate report. Please try again.');
+        }
+    };
+    </script>
+    
+    <!-- ===================== FIX: CAN I AFFORD THIS ===================== -->
+    <script>
+    window.evaluateAffordability = function (amount) {
+        const income = DataManager.getTotalIncome?.() || 0;
+        const expenses = DataManager.getTotalExpenses?.() || 0;
+        const savings = income - expenses;
+    
+        if (amount <= savings * 0.3) return "Safe";
+        if (amount <= savings * 0.6) return "Risky";
+        return "Difficult";
+    };
+    
+    window.handleAffordCheck = function () {
+        const input = document.getElementById("afford-input");
+        const output = document.getElementById("afford-result");
+        if (!input || !output) return;
+    
+        const value = Number(input.value);
+        output.textContent = evaluateAffordability(value);
+    };
+    </script>
+    
+    <!-- ===================== LEVEL 8: GOALS PAGE RENDERING ===================== -->
+    <script>
+    /**
+     * Render Goals Page (Level 8)
+     * Displays all financial goals with progress, status, and actionable plans
+     */
+    window.renderGoalsPage = function() {
+        try {
+            const container = document.getElementById('goals-list-container');
+            const emptyState = document.getElementById('goals-empty-state');
+            
+            if (!container || !emptyState) return;
+
+            // Load goals from AI Chatbot
+            if (typeof window.AIChatbot === 'undefined' || !window.AIChatbot.financialGoals) {
+                container.innerHTML = '';
+                emptyState.style.display = 'block';
+                return;
+            }
+
+            // Reload goals to ensure latest data
+            if (typeof window.AIChatbot.loadFinancialGoals === 'function') {
+                window.AIChatbot.loadFinancialGoals();
+            }
+
+            const goals = window.AIChatbot.financialGoals || [];
+            const activeGoals = goals.filter(g => g.status === 'active' || g.status === 'behind' || g.status === 'completed');
+
+            if (activeGoals.length === 0) {
+                container.innerHTML = '';
+                emptyState.style.display = 'block';
+                return;
+            }
+
+            emptyState.style.display = 'none';
+            container.innerHTML = '';
+
+            // Render each goal
+            activeGoals.forEach((goal, index) => {
+                const goalCard = createGoalCard(goal, index);
+                container.appendChild(goalCard);
+            });
+
+        } catch (e) {
+            console.warn('Goals page rendering failed:', e);
+        }
+    };
+
+    /**
+     * Create a goal card element (Level 8)
+     * @param {Object} goal - Goal object
+     * @param {number} index - Goal index
+     * @returns {HTMLElement} Goal card element
+     */
+    function createGoalCard(goal, index) {
+        const card = document.createElement('div');
+        card.className = 'content-card';
+        card.style.marginBottom = '24px';
+
+        // Calculate status badge
+        let statusBadge = '';
+        let statusClass = '';
+        if (goal.status === 'completed') {
+            statusBadge = 'Completed';
+            statusClass = 'goal-status-completed';
+        } else if (goal.status === 'behind') {
+            statusBadge = 'Behind';
+            statusClass = 'goal-status-behind';
+        } else {
+            statusBadge = 'On Track';
+            statusClass = 'goal-status-ontrack';
+        }
+
+        // Calculate months elapsed
+        const monthsElapsed = Math.floor((Date.now() - goal.createdAt) / (1000 * 60 * 60 * 24 * 30));
+        const monthsRemaining = Math.max(0, goal.durationMonths - monthsElapsed);
+
+        // Get actionable plan from AI
+        let actionablePlan = '';
+        try {
+            const context = window.AIChatbot.getUserFinancialContext();
+            if (context) {
+                const enhancedContext = window.AIChatbot.buildFinancialContext(context);
+                const analysis = window.AIChatbot.analyzeGoalAchievability(goal, enhancedContext);
+                
+                if (analysis.achievable) {
+                    if (analysis.requiresReduction && analysis.suggestion) {
+                        actionablePlan = analysis.suggestion;
+                    } else {
+                        actionablePlan = `Continue saving ₹${goal.monthlyRequirement.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}/month to reach your goal.`;
+                    }
+                } else {
+                    actionablePlan = analysis.reason || 'Review your goal parameters.';
+                }
+            }
+        } catch (e) {
+            actionablePlan = 'Unable to generate plan. Please check your financial data.';
+        }
+
+        // Check for warnings
+        const warnings = [];
+        if (goal.status === 'behind') {
+            const expectedSaved = goal.monthlyRequirement * Math.max(1, monthsElapsed);
+            const shortfall = expectedSaved - goal.amountSaved;
+            if (shortfall > 0) {
+                warnings.push(`You're ₹${shortfall.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} behind schedule.`);
+            }
+        }
+
+        // Build card HTML
+        card.innerHTML = `
+            <div class="goal-card-header" style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px;">
+                <div>
+                    <h2 style="margin: 0 0 8px 0; font-size: 1.5rem;">${escapeHtml(goal.name)}</h2>
+                    <span class="${statusClass}" style="display: inline-block; padding: 4px 12px; border-radius: 12px; font-size: 0.875rem; font-weight: 500;">${statusBadge}</span>
+                </div>
+                <div style="display: flex; gap: 8px;">
+                    <button onclick="if(typeof window.editGoal==='function'){window.editGoal('${goal.id}');}" class="btn btn-secondary" style="padding: 6px 12px; font-size: 0.875rem;" title="Edit Goal">✏️ Edit</button>
+                    <button onclick="if(typeof window.deleteGoal==='function'){window.deleteGoal('${goal.id}');}" class="btn btn-secondary" style="padding: 6px 12px; font-size: 0.875rem; background: rgba(244, 67, 54, 0.2); color: #f44336; border-color: rgba(244, 67, 54, 0.3);" title="Delete Goal">🗑️ Delete</button>
+                </div>
+            </div>
+            
+            <div class="goal-progress-section" style="margin-bottom: 20px;">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 16px; margin-bottom: 16px;">
+                    <div>
+                        <div style="font-size: 0.875rem; color: #888; margin-bottom: 4px;">Target Amount</div>
+                        <div style="font-size: 1.25rem; font-weight: 600;">₹${goal.targetAmount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 0.875rem; color: #888; margin-bottom: 4px;">Amount Saved</div>
+                        <div style="font-size: 1.25rem; font-weight: 600; color: #4CAF50;">₹${goal.amountSaved.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 0.875rem; color: #888; margin-bottom: 4px;">Remaining</div>
+                        <div style="font-size: 1.25rem; font-weight: 600;">₹${goal.remainingAmount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 0.875rem; color: #888; margin-bottom: 4px;">Progress</div>
+                        <div style="font-size: 1.25rem; font-weight: 600;">${goal.completionPercentage.toFixed(1)}%</div>
+                    </div>
+                </div>
+                
+                <div style="background: #2a2a2a; border-radius: 8px; height: 8px; overflow: hidden; margin-bottom: 16px;">
+                    <div style="background: linear-gradient(90deg, #4CAF50, #45a049); height: 100%; width: ${Math.min(100, goal.completionPercentage)}%; transition: width 0.3s ease;"></div>
+                </div>
+            </div>
+
+            <div class="goal-details-section" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 20px;">
+                <div>
+                    <div style="font-size: 0.875rem; color: #888; margin-bottom: 4px;">Duration</div>
+                    <div style="font-size: 1rem;">${goal.durationMonths} months</div>
+                </div>
+                <div>
+                    <div style="font-size: 0.875rem; color: #888; margin-bottom: 4px;">Monthly Required</div>
+                    <div style="font-size: 1rem; font-weight: 500;">₹${goal.monthlyRequirement.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                </div>
+                <div>
+                    <div style="font-size: 0.875rem; color: #888; margin-bottom: 4px;">Time Remaining</div>
+                    <div style="font-size: 1rem;">${monthsRemaining} months</div>
+                </div>
+            </div>
+
+            ${warnings.length > 0 ? `
+            <div class="goal-warnings" style="background: #3a2a1a; border-left: 3px solid #ff9800; padding: 12px; border-radius: 4px; margin-bottom: 20px;">
+                <div style="font-weight: 500; margin-bottom: 4px; color: #ff9800;">⚠️ Warning</div>
+                ${warnings.map(w => `<div style="font-size: 0.875rem;">${escapeHtml(w)}</div>`).join('')}
+            </div>
+            ` : ''}
+
+            <div class="goal-actionable-plan" style="background: #1a1a1a; padding: 16px; border-radius: 8px; border: 1px solid #333;">
+                <div style="font-weight: 600; margin-bottom: 8px; font-size: 1rem;">💡 Actionable Plan</div>
+                <div style="font-size: 0.9375rem; line-height: 1.6; color: #ddd;">${escapeHtml(actionablePlan)}</div>
+            </div>
+        `;
+
+        return card;
+    }
+
+    /**
+     * Escape HTML to prevent XSS
+     */
+    function escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    // ============================================
+    // LEVEL 8: GOAL CRUD OPERATIONS
+    // ============================================
+
+    /**
+     * Show Add Goal Modal (Level 8)
+     */
+    window.showAddGoalModal = function() {
+        try {
+            const modal = document.getElementById('goal-modal');
+            const title = document.getElementById('goal-modal-title');
+            const nameInput = document.getElementById('goal-name-input');
+            const amountInput = document.getElementById('goal-amount-input');
+            const durationInput = document.getElementById('goal-duration-input');
+            const errorDiv = document.getElementById('goal-error');
+            const preview = document.getElementById('goal-preview');
+            const submitBtn = document.getElementById('goal-submit-btn');
+
+            if (!modal || !title || !nameInput || !amountInput || !durationInput) return;
+
+            // Reset form
+            title.textContent = 'Add Financial Goal';
+            nameInput.value = '';
+            amountInput.value = '';
+            durationInput.value = '';
+            errorDiv.style.display = 'none';
+            errorDiv.textContent = '';
+            preview.style.display = 'none';
+            submitBtn.setAttribute('data-goal-id', '');
+
+            // Show modal
+            modal.style.display = 'flex';
+
+            // Add live preview
+            const updatePreview = () => {
+                const amount = parseFloat(amountInput.value);
+                const duration = parseInt(durationInput.value);
+                if (amount > 0 && duration > 0) {
+                    const monthly = amount / duration;
+                    document.getElementById('goal-monthly-preview').textContent = `₹${monthly.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}/month`;
+                    preview.style.display = 'block';
+                } else {
+                    preview.style.display = 'none';
+                }
+            };
+
+            amountInput.addEventListener('input', updatePreview);
+            durationInput.addEventListener('input', updatePreview);
+        } catch (e) {
+            // Silent fail
+        }
+    };
+
+    /**
+     * Show Edit Goal Modal (Level 8)
+     */
+    window.editGoal = function(goalId) {
+        try {
+            if (!window.AIChatbot || !window.AIChatbot.financialGoals) return;
+
+            const goal = window.AIChatbot.financialGoals.find(g => g.id === goalId);
+            if (!goal) return;
+
+            const modal = document.getElementById('goal-modal');
+            const title = document.getElementById('goal-modal-title');
+            const nameInput = document.getElementById('goal-name-input');
+            const amountInput = document.getElementById('goal-amount-input');
+            const durationInput = document.getElementById('goal-duration-input');
+            const errorDiv = document.getElementById('goal-error');
+            const preview = document.getElementById('goal-preview');
+            const submitBtn = document.getElementById('goal-submit-btn');
+
+            if (!modal || !title || !nameInput || !amountInput || !durationInput) return;
+
+            // Populate form
+            title.textContent = 'Edit Financial Goal';
+            nameInput.value = goal.name;
+            amountInput.value = goal.targetAmount;
+            durationInput.value = goal.durationMonths;
+            errorDiv.style.display = 'none';
+            errorDiv.textContent = '';
+            submitBtn.setAttribute('data-goal-id', goalId);
+
+            // Show preview
+            const monthly = goal.monthlyRequirement;
+            document.getElementById('goal-monthly-preview').textContent = `₹${monthly.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}/month`;
+            preview.style.display = 'block';
+
+            // Show modal
+            modal.style.display = 'flex';
+
+            // Add live preview
+            const updatePreview = () => {
+                const amount = parseFloat(amountInput.value);
+                const duration = parseInt(durationInput.value);
+                if (amount > 0 && duration > 0) {
+                    const monthly = amount / duration;
+                    document.getElementById('goal-monthly-preview').textContent = `₹${monthly.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}/month`;
+                    preview.style.display = 'block';
+                } else {
+                    preview.style.display = 'none';
+                }
+            };
+
+            amountInput.addEventListener('input', updatePreview);
+            durationInput.addEventListener('input', updatePreview);
+        } catch (e) {
+            // Silent fail
+        }
+    };
+
+    /**
+     * Close Goal Modal (Level 8)
+     */
+    window.closeGoalModal = function() {
+        try {
+            const modal = document.getElementById('goal-modal');
+            if (modal) {
+                modal.style.display = 'none';
+            }
+        } catch (e) {
+            // Silent fail
+        }
+    };
+
+    /**
+     * Save Goal (Add or Update) (Level 8)
+     */
+    window.saveGoal = function() {
+        try {
+            if (!window.AIChatbot) {
+                const errorDiv = document.getElementById('goal-error');
+                if (errorDiv) {
+                    errorDiv.textContent = 'AI Chatbot not available. Please refresh the page.';
+                    errorDiv.style.display = 'block';
+                }
+                return;
+            }
+
+            const nameInput = document.getElementById('goal-name-input');
+            const amountInput = document.getElementById('goal-amount-input');
+            const durationInput = document.getElementById('goal-duration-input');
+            const errorDiv = document.getElementById('goal-error');
+            const submitBtn = document.getElementById('goal-submit-btn');
+
+            if (!nameInput || !amountInput || !durationInput) return;
+
+            // Get values
+            const name = nameInput.value.trim();
+            const targetAmount = parseFloat(amountInput.value);
+            const durationMonths = parseInt(durationInput.value);
+            const goalId = submitBtn.getAttribute('data-goal-id');
+
+            // Validation
+            if (!name || name.length === 0) {
+                if (errorDiv) {
+                    errorDiv.textContent = 'Please enter a goal name.';
+                    errorDiv.style.display = 'block';
+                }
+                return;
+            }
+
+            if (!targetAmount || targetAmount <= 0) {
+                if (errorDiv) {
+                    errorDiv.textContent = 'Please enter a valid target amount greater than 0.';
+                    errorDiv.style.display = 'block';
+                }
+                return;
+            }
+
+            if (!durationMonths || durationMonths <= 0 || durationMonths > 120) {
+                if (errorDiv) {
+                    errorDiv.textContent = 'Please enter a valid duration between 1 and 120 months.';
+                    errorDiv.style.display = 'block';
+                }
+                return;
+            }
+
+            if (errorDiv) {
+                errorDiv.style.display = 'none';
+            }
+
+            // Check for duplicate names (if adding new goal)
+            if (!goalId) {
+                const existingGoals = window.AIChatbot.financialGoals || [];
+                const duplicate = existingGoals.find(g => g.name.toLowerCase() === name.toLowerCase() && (g.status === 'active' || g.status === 'behind'));
+                if (duplicate) {
+                    if (errorDiv) {
+                        errorDiv.textContent = 'A goal with this name already exists. Please use a different name.';
+                        errorDiv.style.display = 'block';
+                    }
+                    return;
+                }
+            }
+
+            // Update existing goal
+            if (goalId) {
+                const goal = window.AIChatbot.financialGoals.find(g => g.id === goalId);
+                if (goal) {
+                    goal.name = name;
+                    goal.targetAmount = targetAmount;
+                    goal.durationMonths = durationMonths;
+                    goal.monthlyRequirement = parseFloat((targetAmount / durationMonths).toFixed(2));
+                    goal.remainingAmount = Math.max(0, targetAmount - goal.amountSaved);
+                    goal.completionPercentage = Math.min(100, (goal.amountSaved / targetAmount) * 100);
+                    
+                    // Recalculate status
+                    const monthsElapsed = Math.floor((Date.now() - goal.createdAt) / (1000 * 60 * 60 * 24 * 30));
+                    const expectedSaved = goal.monthlyRequirement * Math.max(1, monthsElapsed);
+                    if (goal.completionPercentage >= 100) {
+                        goal.status = 'completed';
+                    } else if (goal.amountSaved < expectedSaved * 0.8) {
+                        goal.status = 'behind';
+                    } else {
+                        goal.status = 'active';
+                    }
+
+                    window.AIChatbot.saveFinancialGoals();
+                }
+            } else {
+                // Create new goal
+                const newGoal = window.AIChatbot.createFinancialGoal(name, targetAmount, durationMonths);
+                if (!newGoal) {
+                    if (errorDiv) {
+                        errorDiv.textContent = 'Failed to create goal. Please try again.';
+                        errorDiv.style.display = 'block';
+                    }
+                    return;
+                }
+            }
+
+            // Close modal and refresh page
+            window.closeGoalModal();
+            if (typeof window.renderGoalsPage === 'function') {
+                window.renderGoalsPage();
+            }
+        } catch (e) {
+            // Silent fail
+            const errorDiv = document.getElementById('goal-error');
+            if (errorDiv) {
+                errorDiv.textContent = 'An error occurred. Please try again.';
+                errorDiv.style.display = 'block';
+            }
+        }
+    };
+
+    /**
+     * Delete Goal (Level 8)
+     */
+    window.deleteGoal = function(goalId) {
+        try {
+            if (!window.AIChatbot || !window.AIChatbot.financialGoals) return;
+
+            const goal = window.AIChatbot.financialGoals.find(g => g.id === goalId);
+            if (!goal) return;
+
+            // Confirmation
+            const confirmed = confirm(`Are you sure you want to delete "${goal.name}"?\n\nThis action cannot be undone.`);
+            if (!confirmed) return;
+
+            // Remove goal
+            window.AIChatbot.financialGoals = window.AIChatbot.financialGoals.filter(g => g.id !== goalId);
+            window.AIChatbot.saveFinancialGoals();
+
+            // Refresh page
+            if (typeof window.renderGoalsPage === 'function') {
+                window.renderGoalsPage();
+            }
+        } catch (e) {
+            // Silent fail
+        }
+    };
+
+    // Close modal when clicking outside
+    window.addEventListener('click', function(event) {
+        try {
+            const modal = document.getElementById('goal-modal');
+            if (event.target === modal) {
+                window.closeGoalModal();
+            }
+        } catch (e) {
+            // Silent fail
+        }
+    });
+    </script>
+    
+    
+    <!-- ===================== FIX: REMOVE TOP GAP ===================== -->
+    <style>
+    .page.about,
+    .page.contact {
+        padding-top: 0 !important;
+        margin-top: 0 !important;
+    }
+    </style>
+    
+    <!-- ===================== RESPONSIVE FIX ===================== -->
+    <style>
+    @media (max-width: 768px) {
+        .dashboard-grid {
+            grid-template-columns: 1fr !important;
+        }
+    }
+    </style>
+
+</body>
+</html>
+
