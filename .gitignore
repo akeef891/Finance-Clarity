@@ -5,3 +5,4 @@ dist/
 .env
 firebase-admin-setup/serviceAccountKey.json
 *.json
+firebase-admin-setup/serviceAccountKey.json

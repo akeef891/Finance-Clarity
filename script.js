@@ -762,19 +762,25 @@ const savings = savingsElement
 
   window.showSection = function (id) {
     try {
-      document.querySelectorAll('.page-section').forEach(sec => {
-        sec.style.display = 'none';
-      });
-
-      const target = document.getElementById(id);
-      if (target) {
-        target.style.display = 'block';
-        setTimeout(() => {
-          if (window.SafeChartManager && typeof SafeChartManager.updateAllCharts === 'function') {
-            SafeChartManager.updateAllCharts();
+      if (!window._pageSections) window._pageSections = document.querySelectorAll('.page-section');
+      
+      requestAnimationFrame(() => {
+        window._pageSections.forEach(sec => {
+          if (sec.style.display !== 'none') {
+            sec.style.display = 'none';
           }
-        }, 150);
-      }
+        });
+
+        const target = document.getElementById(id);
+        if (target) {
+          target.style.display = 'block';
+          requestAnimationFrame(() => {
+            if (window.SafeChartManager && typeof window.SafeChartManager.updateAllCharts === 'function') {
+              window.SafeChartManager.updateAllCharts();
+            }
+          });
+        }
+      });
     } catch (e) {
       console.warn('showSection error:', e);
     }
@@ -806,11 +812,11 @@ const savings = savingsElement
     
     // Render recent activity if element exists
     if (document.getElementById('recent-activity-container') || document.getElementById('recent-activity-list')) {
-      setTimeout(() => {
+      requestAnimationFrame(() => {
         if (typeof window.renderRecentActivity === 'function') {
           window.renderRecentActivity();
         }
-      }, 100);
+      });
     }
   });
 
@@ -819,3 +825,13 @@ const savings = savingsElement
   window.escapeHtml = escapeHtml;
 
 })();
+
+const contactForm = document.querySelector('form[name="contact"]');
+
+if (contactForm) {
+  contactForm.addEventListener('submit', () => {
+    setTimeout(() => {
+      contactForm.reset();
+    }, 500);
+  });
+}
