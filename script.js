@@ -826,13 +826,17 @@ const savings = savingsElement
 
 })();
 
-const contactForm = document.querySelector('form[name="contact"]');
+(function () {
+  const contactForm = document.querySelector('form[name="contact"]');
+  if (!contactForm) return;
+  const msgDiv = document.getElementById('contact-page-form-message');
+  if (!msgDiv) return;
 
-if (contactForm) {
+  let hideTimer = null;
+
   contactForm.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const msgDiv = document.getElementById('contact-page-form-message');
-    if (!msgDiv) return;
+    if (hideTimer) clearTimeout(hideTimer);
     const formData = new FormData(contactForm);
     try {
       const response = await fetch('/', {
@@ -841,12 +845,16 @@ if (contactForm) {
         body: new URLSearchParams(Object.fromEntries(formData)).toString()
       });
       if (response.ok) {
+        contactForm.reset();
         msgDiv.style.display = 'block';
         msgDiv.style.color = 'var(--accent-green)';
         msgDiv.style.background = 'rgba(46, 213, 115, 0.1)';
         msgDiv.style.border = '1px solid var(--accent-green)';
         msgDiv.textContent = "Message sent successfully. We'll get back to you soon.";
-        contactForm.reset();
+        hideTimer = setTimeout(function () {
+          msgDiv.style.display = 'none';
+          hideTimer = null;
+        }, 7000);
       } else {
         throw new Error('Form submission failed');
       }
@@ -858,4 +866,4 @@ if (contactForm) {
       msgDiv.textContent = 'Error sending message. Please try again later.';
     }
   });
-}
+})();
