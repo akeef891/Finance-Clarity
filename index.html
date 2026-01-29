@@ -1015,35 +1015,91 @@
             isDataLoading = false;
             isInitialLoad = false;
             
-            // DEFER non-critical content using requestIdleCallback
+            // DEFER non-critical content using requestIdleCallback with lazy loading
             if ('requestIdleCallback' in window) {
                 requestIdleCallback(() => {
                     // Load recent activity (deferred)
                     loadRecentActivity();
                     
-                    // Initialize charts (deferred)
-                    requestAnimationFrame(() => {
-                        if (typeof ChartManager !== 'undefined') {
-                            if (!ChartManager.charts.expensePie) {
-                                ChartManager.initCharts();
-                            }
-                            // Initialize only primary chart first
-                            ChartManager.updateAllCharts();
+                    // Lazy load charts only when visible (Intersection Observer)
+                    if ('IntersectionObserver' in window) {
+                        const chartsSection = document.querySelector('.charts-section');
+                        if (chartsSection) {
+                            const chartObserver = new IntersectionObserver((entries) => {
+                                entries.forEach(entry => {
+                                    if (entry.isIntersecting) {
+                                        // Initialize charts when section becomes visible
+                                        requestAnimationFrame(() => {
+                                            if (typeof ChartManager !== 'undefined') {
+                                                if (!ChartManager.charts.expensePie) {
+                                                    ChartManager.initCharts();
+                                                }
+                                                ChartManager.updateAllCharts();
+                                            }
+                                        });
+                                        chartObserver.unobserve(entry.target);
+                                    }
+                                });
+                            }, { rootMargin: '50px' });
+                            chartObserver.observe(chartsSection);
+                        } else {
+                            // Fallback: initialize after delay if no observer
+                            setTimeout(() => {
+                                if (typeof ChartManager !== 'undefined') {
+                                    if (!ChartManager.charts.expensePie) {
+                                        ChartManager.initCharts();
+                                    }
+                                    ChartManager.updateAllCharts();
+                                }
+                            }, 500);
                         }
-                    });
+                    } else {
+                        // Fallback for browsers without IntersectionObserver
+                        setTimeout(() => {
+                            if (typeof ChartManager !== 'undefined') {
+                                if (!ChartManager.charts.expensePie) {
+                                    ChartManager.initCharts();
+                                }
+                                ChartManager.updateAllCharts();
+                            }
+                        }, 500);
+                    }
                 }, { timeout: 1000 });
             } else {
                 // Fallback for browsers without requestIdleCallback
                 setTimeout(() => {
                     loadRecentActivity();
-                    requestAnimationFrame(() => {
-                    if (typeof ChartManager !== 'undefined') {
-                        if (!ChartManager.charts.expensePie) {
-                            ChartManager.initCharts();
+                    // Lazy load charts
+                    if ('IntersectionObserver' in window) {
+                        const chartsSection = document.querySelector('.charts-section');
+                        if (chartsSection) {
+                            const chartObserver = new IntersectionObserver((entries) => {
+                                entries.forEach(entry => {
+                                    if (entry.isIntersecting) {
+                                        requestAnimationFrame(() => {
+                                            if (typeof ChartManager !== 'undefined') {
+                                                if (!ChartManager.charts.expensePie) {
+                                                    ChartManager.initCharts();
+                                                }
+                                                ChartManager.updateAllCharts();
+                                            }
+                                        });
+                                        chartObserver.unobserve(entry.target);
+                                    }
+                                });
+                            }, { rootMargin: '50px' });
+                            chartObserver.observe(chartsSection);
                         }
-                        ChartManager.updateAllCharts();
+                    } else {
+                        setTimeout(() => {
+                            if (typeof ChartManager !== 'undefined') {
+                                if (!ChartManager.charts.expensePie) {
+                                    ChartManager.initCharts();
+                                }
+                                ChartManager.updateAllCharts();
+                            }
+                        }, 500);
                     }
-            });
                 }, 100);
             }
         }
@@ -1296,33 +1352,64 @@
             document.getElementById('misc-limit').value = spending.miscellaneous || '';
         }
 
-        window.updateFlexibleSpending = function(category, amount) {
+        // Debounced version for performance - batches updates
+        const debouncedUpdateFlexibleSpending = window.debounce ? window.debounce(function(category, amount) {
             if (!window.DataManager || typeof DataManager.updateFlexibleSpending !== 'function') return;
             DataManager.updateFlexibleSpending(category, amount);
             
-            // Update charts after flexible spending changes
-            setTimeout(() => {
-                if (window.SafeChartManager && typeof SafeChartManager.updateAllCharts === 'function') {
-                    SafeChartManager.updateAllCharts();
+            // Batch DOM updates for performance
+            if (window.batchDOMUpdates) {
+                window.batchDOMUpdates(() => {
+                    if (typeof updateDashboard === 'function') {
+                        updateDashboard();
+                    }
+                    // Refresh recent activity
+                    if (typeof loadRecentActivity === 'function') {
+                        loadRecentActivity();
+                    } else if (typeof window.renderRecentActivity === 'function') {
+                        window.renderRecentActivity();
+                    }
+                });
+            } else {
+                if (typeof updateDashboard === 'function') {
+                    updateDashboard();
                 }
-                if (window.ChartManager && typeof ChartManager.updateAllCharts === 'function') {
-                    ChartManager.updateAllCharts();
+                if (typeof loadRecentActivity === 'function') {
+                    loadRecentActivity();
+                } else if (typeof window.renderRecentActivity === 'function') {
+                    window.renderRecentActivity();
                 }
-            }, 100);
-            if (typeof updateDashboard === 'function') {
-                updateDashboard();
             }
-            // Refresh charts
-            if (typeof ChartManager !== 'undefined' && typeof ChartManager.updateAllCharts === 'function') {
-                ChartManager.updateAllCharts();
+            
+            // Update charts after flexible spending changes (throttled)
+            if (window.throttle) {
+                const throttledChartUpdate = window.throttle(function() {
+                    if (window.SafeChartManager && typeof SafeChartManager.updateAllCharts === 'function') {
+                        SafeChartManager.updateAllCharts();
+                    }
+                    if (window.ChartManager && typeof ChartManager.updateAllCharts === 'function') {
+                        ChartManager.updateAllCharts();
+                    }
+                }, 300);
+                throttledChartUpdate();
+            } else {
+                setTimeout(() => {
+                    if (window.SafeChartManager && typeof SafeChartManager.updateAllCharts === 'function') {
+                        SafeChartManager.updateAllCharts();
+                    }
+                    if (window.ChartManager && typeof ChartManager.updateAllCharts === 'function') {
+                        ChartManager.updateAllCharts();
+                    }
+                }, 100);
             }
-            // Refresh recent activity (DataManager.updateFlexibleSpending now handles history)
-            if (typeof loadRecentActivity === 'function') {
-                loadRecentActivity();
-            } else if (typeof window.renderRecentActivity === 'function') {
-                window.renderRecentActivity();
-            }
+        }, 300) : function(category, amount) {
+            // Fallback if debounce not available
+            if (!window.DataManager || typeof DataManager.updateFlexibleSpending !== 'function') return;
+            DataManager.updateFlexibleSpending(category, amount);
+            if (typeof updateDashboard === 'function') updateDashboard();
         };
+        
+        window.updateFlexibleSpending = debouncedUpdateFlexibleSpending;
 
         // Dashboard Update - optimized, prevents redundant updates
         let lastDashboardUpdate = null;
@@ -1351,7 +1438,7 @@
             }
             lastDashboardUpdate = currentState;
 
-            // Update overview cards with instant updates (≤200ms fade-in only)
+            // Batch DOM updates for performance
             const updateCardValue = (elementId, value) => {
                 const element = document.getElementById(elementId);
                 if (!element) return;
@@ -1368,10 +1455,20 @@
                 element.textContent = `₹${value.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
             };
 
-            updateCardValue('total-income', income);
-            updateCardValue('total-fixed', fixed);
-            updateCardValue('total-flexible', flexible);
-            updateCardValue('total-savings', savings);
+            // Use batchDOMUpdates if available for better performance
+            if (window.batchDOMUpdates) {
+                window.batchDOMUpdates(() => {
+                    updateCardValue('total-income', income);
+                    updateCardValue('total-fixed', fixed);
+                    updateCardValue('total-flexible', flexible);
+                    updateCardValue('total-savings', savings);
+                });
+            } else {
+                updateCardValue('total-income', income);
+                updateCardValue('total-fixed', fixed);
+                updateCardValue('total-flexible', flexible);
+                updateCardValue('total-savings', savings);
+            }
 
             const fixedPercentage = income > 0 ? ((fixed / income) * 100).toFixed(1) : 0;
             const fixedPercElement = document.getElementById('fixed-percentage');

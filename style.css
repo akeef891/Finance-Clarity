@@ -459,6 +459,118 @@ body {
     }
 }
 
+/* ============================================
+   RESPONSIVE BREAKPOINTS - COMPREHENSIVE
+   ============================================ */
+
+/* Extra Small Phones (320px - 359px) */
+@media (max-width: 359px) {
+    .container {
+        padding: 8px;
+        max-width: 100%;
+    }
+    
+    .page-container {
+        padding: 12px 8px;
+        margin-top: 0;
+    }
+    
+    .overview-card,
+    .content-card {
+        padding: 12px;
+        min-width: 0;
+    }
+    
+    .card-value {
+        font-size: 18px;
+        word-break: break-word;
+    }
+    
+    .modal-content {
+        width: 100%;
+        max-width: 100%;
+        margin: 0;
+        border-radius: 0;
+        padding: 12px;
+    }
+    
+    .header-btn {
+        font-size: 12px;
+        padding: 8px 12px;
+        min-height: 40px;
+        white-space: normal;
+        word-break: break-word;
+    }
+    
+    .logo-text h1 {
+        font-size: 18px;
+    }
+    
+    .section-title {
+        font-size: 16px;
+        word-break: break-word;
+    }
+    
+    .savings-amount {
+        font-size: 24px;
+        word-break: break-word;
+    }
+    
+    .chart-container {
+        height: 180px;
+        min-width: 0;
+    }
+    
+    /* Prevent overflow on very small screens */
+    .dashboard-cards,
+    .flexible-categories-grid,
+    .charts-grid {
+        grid-template-columns: 1fr;
+        gap: 8px;
+    }
+    
+    /* Optimize text wrapping */
+    .card-label,
+    .card-description,
+    .section-subtitle,
+    p {
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+        hyphens: auto;
+    }
+}
+
+/* Small Phones (360px - 479px) */
+@media (min-width: 360px) and (max-width: 479px) {
+    .container {
+        padding: 10px;
+        max-width: 100%;
+    }
+    
+    .page-container {
+        padding: 14px 10px;
+    }
+    
+    .overview-card,
+    .content-card {
+        padding: 14px;
+    }
+    
+    .card-value {
+        font-size: 20px;
+    }
+    
+    .modal-content {
+        width: 95%;
+        padding: 16px;
+    }
+    
+    .header-btn {
+        font-size: 13px;
+        padding: 10px 14px;
+    }
+}
+
 /* Mobile responsiveness for page views */
 @media (max-width: 768px) {
     .page-container {
@@ -549,12 +661,30 @@ body {
     .ai-chatbot-panel {
         max-width: 100%;
         overflow-x: hidden;
+        /* Prevent layout shifts */
+        min-width: 0;
     }
     .btn,
     .header-btn,
     .ai-chatbot-suggestion-btn {
         white-space: normal;
         word-break: break-word;
+        /* Prevent text overflow */
+        overflow-wrap: break-word;
+    }
+    /* Ensure all grid/flex containers respect viewport */
+    .dashboard-cards,
+    .flexible-categories-grid,
+    .charts-grid,
+    .main-content {
+        min-width: 0;
+        width: 100%;
+    }
+    /* Fix potential overflow in cards */
+    .overview-card,
+    .content-card {
+        min-width: 0;
+        overflow: hidden;
     }
 }
 
@@ -2800,6 +2930,46 @@ body {
     perspective: 1000px;
 }
 
+/* Optimize images and media for performance */
+img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+}
+
+/* Lazy loading support */
+img[loading="lazy"] {
+    content-visibility: auto;
+}
+
+/* Optimize font rendering */
+body {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+}
+
+/* Content visibility optimization for off-screen content */
+.charts-section:not(.active),
+.history-section:not(.active) {
+    content-visibility: auto;
+    contain-intrinsic-size: 400px;
+}
+
+/* Optimize rendering for large lists */
+.income-items-list,
+.expense-items-list,
+.history-grouped-container {
+    contain: layout style paint;
+}
+
+/* Reduce repaints on scroll */
+.overview-card,
+.content-card,
+.chart-card {
+    contain: layout style;
+}
+
 /* Optimize animations for mobile */
 @media (max-width: 768px) {
     .overview-card,
@@ -2916,10 +3086,25 @@ body {
         overflow-x: hidden;
         -webkit-overflow-scrolling: touch;
         touch-action: manipulation;
+        /* GPU acceleration for smooth scrolling */
+        transform: translateZ(0);
+        -webkit-transform: translateZ(0);
     }
     /* Improve tap responsiveness without changing desktop layout */
     button, .btn, .check-affordability-btn, input, select, textarea {
         touch-action: manipulation;
+        /* Prevent 300ms tap delay on mobile */
+        -webkit-tap-highlight-color: transparent;
+    }
+    /* Optimize scrolling containers */
+    .ai-chatbot-messages,
+    .history-grouped-container,
+    .modal-body,
+    .income-items-list,
+    .expense-items-list {
+        -webkit-overflow-scrolling: touch;
+        will-change: scroll-position;
+        transform: translateZ(0);
     }
 }
 
@@ -3386,15 +3571,18 @@ body:not(.page-loading) * {
 @media (max-width: 480px) {
     .container {
         padding: 8px;
+        max-width: 100%;
     }
     
     .overview-card,
     .content-card {
         padding: 12px;
+        min-width: 0;
     }
     
     .card-value {
         font-size: 20px;
+        word-break: break-word;
     }
     
     .modal-content {
@@ -3414,6 +3602,7 @@ body:not(.page-loading) * {
         padding: 16px;
         max-height: calc(100vh - 200px);
         overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
     }
     
     .modal-footer {
@@ -3428,22 +3617,42 @@ body:not(.page-loading) * {
     
     .charts-grid {
         gap: 12px;
+        min-width: 0;
     }
     
     .chart-container {
         height: 200px;
+        min-width: 0;
     }
     
     .activity-item {
         padding: 8px;
+        min-width: 0;
     }
     
     .history-entry {
         padding: 10px;
+        min-width: 0;
     }
     
     .savings-amount {
         font-size: 28px;
+        word-break: break-word;
+    }
+    
+    /* Prevent text overflow on small screens */
+    .card-label,
+    .card-description,
+    .section-subtitle {
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+    }
+    
+    /* Optimize input fields */
+    .currency-input,
+    .input {
+        font-size: 16px; /* Prevents zoom on iOS */
+        min-width: 0;
     }
 }
 
@@ -3472,12 +3681,28 @@ body:not(.page-loading) * {
         width: 44px;
         height: 44px;
         font-size: 20px;
+        min-width: 44px;
+        min-height: 44px;
     }
     
-    /* Better scrolling */
+    /* Better scrolling with GPU acceleration */
     .history-grouped-container,
-    .modal-body {
+    .modal-body,
+    .ai-chatbot-messages,
+    .income-items-list,
+    .expense-items-list {
         -webkit-overflow-scrolling: touch;
+        transform: translateZ(0);
+        will-change: scroll-position;
+    }
+    
+    /* Optimize button touch targets */
+    .btn,
+    .header-btn,
+    .add-btn,
+    .check-affordability-btn {
+        min-height: 44px;
+        min-width: 44px;
     }
 }
 

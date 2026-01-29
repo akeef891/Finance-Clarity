@@ -6,6 +6,58 @@
 (function () {
   'use strict';
 
+  /* ================= PERFORMANCE UTILITIES ================= */
+  // Debounce utility for performance optimization
+  window.debounce = window.debounce || function(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+      const later = () => {
+        clearTimeout(timeout);
+        func(...args);
+      };
+      clearTimeout(timeout);
+      timeout = setTimeout(later, wait);
+    };
+  };
+
+  // Throttle utility for performance optimization
+  window.throttle = window.throttle || function(func, limit) {
+    let inThrottle;
+    return function(...args) {
+      if (!inThrottle) {
+        func.apply(this, args);
+        inThrottle = true;
+        setTimeout(() => inThrottle = false, limit);
+      }
+    };
+  };
+
+  // Optimized DOM update helper - batches updates using requestAnimationFrame
+  window.batchDOMUpdates = window.batchDOMUpdates || (function() {
+    let updateQueue = [];
+    let rafScheduled = false;
+    
+    function flushUpdates() {
+      const updates = updateQueue.splice(0);
+      updates.forEach(fn => {
+        try {
+          fn();
+        } catch (e) {
+          console.error('DOM update error:', e);
+        }
+      });
+      rafScheduled = false;
+    }
+    
+    return function(fn) {
+      updateQueue.push(fn);
+      if (!rafScheduled) {
+        rafScheduled = true;
+        requestAnimationFrame(flushUpdates);
+      }
+    };
+  })();
+
   /* ================= UI UTILITIES (LEVEL-10 SAFE ADDITIONS) ================= */
   // Toasts: JS-driven (no HTML changes required)
   window.FCToast = window.FCToast || (function () {
