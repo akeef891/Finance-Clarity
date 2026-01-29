@@ -5,7 +5,12 @@
     <meta name="google-site-verification" content="xG1FdS9JBfKaxxV3J1GBFw8cLgWhrg4PGEUfKav2PHQ" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Finance Clarity – Personal Finance Tracker | Budget, Goals & Savings Dashboard</title>
-    <!-- Google tag (gtag.js) -->
+    <!-- Performance: Preconnect to critical third-party origins -->
+    <link rel="preconnect" href="https://www.googletagmanager.com" crossorigin>
+    <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+
+    <!-- Google tag (gtag.js) - already async, does not block rendering -->
      <script async src="https://www.googletagmanager.com/gtag/js?id=G-9W726KFNR1"></script>
     <script>
      window.dataLayer = window.dataLayer || [];
@@ -24,12 +29,17 @@
     <meta property="og:type" content="website">
     <!-- Prevent favicon.ico 404 (no UI impact) -->
     <link rel="icon" href="data:image/x-icon;base64,AAABAAEAEBAAAAEAIABoBAAAFgAAACgAAAAQAAAAIAAAAAEAIAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==">
-    <link rel="stylesheet" href="style.css">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+    <!-- Critical CSS: preload, then apply without blocking rendering -->
+    <link rel="preload" href="style.css" as="style" onload="this.rel='stylesheet'">
+    <noscript><link rel="stylesheet" href="style.css"></noscript>
+
+    <!-- Non-critical JS: defer to avoid render blocking while preserving execution order -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" defer></script>
     <!-- Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js" defer></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js" defer></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js" defer></script>
     <style>
 
         body {
