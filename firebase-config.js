@@ -8,8 +8,8 @@
 (function() {
     const protocol = window.location.protocol;
     if (protocol === 'file:') {
-        // Block Firebase initialization completely
-        window.firebaseReady = false;
+        // Block Firebase initialization completely (use promise so callers can await)
+        window.firebaseReady = Promise.resolve(false);
         window.isFirebaseAvailable = function() { return false; };
         
         // Show blocking error message
@@ -72,102 +72,76 @@ window.isFirebaseAvailable = function() {
            typeof firebase.firestore === 'function';
 };
 
-// Initialize Firebase with optimizations
-// CRITICAL: Do NOT initialize Firebase on file:// protocol (already blocked above, but double-check)
-if (window.location.protocol !== 'file:' && window.isFirebaseAvailable()) {
-    try {
-        // Firebase modular-API compatibility shim (required by readiness/double-init guards)
-        // getApps() is used in Firebase v9 modular, but this app uses the v8 compat global.
-        // Provide a safe shim so we can use getApps().length === 0 without changing SDK.
-        window.getApps = window.getApps || function () {
-            try {
-                return (window.firebase && Array.isArray(window.firebase.apps)) ? window.firebase.apps : [];
-            } catch (e) {
-                console.error('getApps() shim failed:', e);
-                return [];
+// Global promise-based initialization guard. Firebase initializes ONLY ONCE; no auth until this resolves.
+function initFirebase() {
+    if (window._firebaseReadyPromise) {
+        return window._firebaseReadyPromise;
+    }
+    window._firebaseReadyPromise = new Promise((resolve) => {
+        // Unavailable (e.g. file://): resolve false so callers can await without hanging
+        if (window.location.protocol === 'file:' || !window.isFirebaseAvailable()) {
+            resolve(false);
+            return;
+        }
+        try {
+            // getApps shim for compat
+            window.getApps = window.getApps || function () {
+                try {
+                    return (window.firebase && Array.isArray(window.firebase.apps)) ? window.firebase.apps : [];
+                } catch (e) {
+                    return [];
+                }
+            };
+
+            // Initialize app ONLY ONCE
+            if (window.getApps().length === 0) {
+                firebase.initializeApp(firebaseConfig);
             }
-        };
 
-        // Global readiness controls (promise + resolved flag)
-        // NOTE: keep a separate boolean flag to avoid breaking existing code paths that used window.firebaseReady as boolean.
-        if (typeof window.__firebaseReadyResolved !== 'boolean') {
-            window.__firebaseReadyResolved = false;
-        }
+            const auth = firebase.auth();
+            const db = firebase.firestore();
 
-        // A) Add a global Firebase readiness promise (resolves after initializeApp + service exports)
-        if (!window.firebaseReady || typeof window.firebaseReady.then !== 'function') {
-            window.firebaseReady = new Promise((resolve) => {
-                window.__resolveFirebaseReady = resolve;
-            });
-        }
-
-        // B) Prevent double initialization
-        if (window.getApps().length === 0) {
-            firebase.initializeApp(firebaseConfig);
-        }
-        
-        // Initialize Firebase services
-        const auth = firebase.auth();
-        const db = firebase.firestore();
-        
-        // CRITICAL: Configure Firestore settings FIRST, before any operations or persistence
-        // Settings must be applied before Firestore is used anywhere
-        // Use singleton guard to prevent "settings can no longer be changed" error
-        if (typeof db.settings === 'function' && !window.__firestoreSettingsApplied) {
-            try {
-                db.settings({
-                    cacheSizeBytes: firebase.firestore.CACHE_SIZE_UNLIMITED,
-                    ignoreUndefinedProperties: true
-                });
-                window.__firestoreSettingsApplied = true;
-            } catch (settingsError) {
-                // If settings already applied, ignore (singleton guard prevents this, but be safe)
-                if (!settingsError.message || !settingsError.message.includes('already been started')) {
-                    console.error('Firestore settings error:', settingsError);
+            // Firestore settings FIRST (singleton)
+            if (typeof db.settings === 'function' && !window.__firestoreSettingsApplied) {
+                try {
+                    db.settings({
+                        cacheSizeBytes: firebase.firestore.CACHE_SIZE_UNLIMITED,
+                        ignoreUndefinedProperties: true
+                    });
+                    window.__firestoreSettingsApplied = true;
+                } catch (settingsError) {
+                    if (!settingsError.message || !settingsError.message.includes('already been started')) {
+                        console.error('Firestore settings error:', settingsError);
+                    }
                 }
             }
-        }
-        
-        // Enable Firestore persistence for offline support and performance
-        // Must be called AFTER settings, but persistence can be called multiple times safely
-        if (typeof db.enablePersistence === 'function') {
-            db.enablePersistence({
-                synchronizeTabs: true
-            }).catch(function(err) {
-                // Silent fail - persistence may not be available in all browsers
-                // All error codes are expected and handled silently
-            });
-        }
-        
-        // Export for use in other files (ONLY after settings are applied)
-        window.firebaseAuth = auth;
-        window.firebaseDb = db;
-        // Resolve readiness promise and set resolved flag (keep compatibility)
-        window.__firebaseReadyResolved = true;
-        try {
-            if (typeof window.__resolveFirebaseReady === 'function') {
-                window.__resolveFirebaseReady(true);
+
+            // Resolve ONLY after persistence attempt completes so auth is safe to use
+            function finish() {
+                window.firebaseAuth = auth;
+                window.firebaseDb = db;
+                resolve(true);
+            }
+
+            if (typeof db.enablePersistence === 'function') {
+                db.enablePersistence({ synchronizeTabs: true }).catch(function() {}).then(finish);
+            } else {
+                finish();
             }
         } catch (e) {
-            console.error('Failed to resolve firebaseReady promise:', e);
+            console.error('Firebase initialization failed:', e);
+            resolve(false);
         }
-    } catch (e) {
-        // No silent catch blocks: surface the real initialization error
-        console.error('Firebase initialization failed:', e);
-        window.__firebaseReadyResolved = false;
-        try {
-            if (typeof window.__resolveFirebaseReady === 'function') {
-                window.__resolveFirebaseReady(false);
-            }
-        } catch (err) {
-            console.error('Failed to resolve firebaseReady promise after init failure:', err);
-        }
-    }
-} else {
-    // Ensure firebaseReady promise exists even when Firebase is unavailable (so callers can await deterministically)
-    if (!window.firebaseReady || typeof window.firebaseReady.then !== 'function') {
-        window.firebaseReady = Promise.resolve(false);
-    }
-    window.__firebaseReadyResolved = false;
+    });
+    return window._firebaseReadyPromise;
 }
+
+// Single global promise: same as initFirebase() for await-based guards
+window.firebaseReady = null;
+if (window.location.protocol !== 'file:' && window.isFirebaseAvailable()) {
+    window.firebaseReady = initFirebase();
+} else {
+    window.firebaseReady = Promise.resolve(false);
+}
+window.initFirebase = initFirebase;
 

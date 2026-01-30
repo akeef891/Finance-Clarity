@@ -2,7 +2,6 @@
 // AUTHENTICATION MANAGEMENT (FIXED & STABLE)
 // ============================================
 
-let firebaseReady = false;
 window.AuthManager = {
     currentUser: null,
     authStateListeners: [],
@@ -34,34 +33,17 @@ window.AuthManager = {
                window.firebaseDb;
     },
 
-    // Global readiness helper (C/F): all auth actions MUST wait for Firebase readiness
+    // Global promise-based guard: no auth action until Firebase is fully initialized
     async waitForFirebaseReady() {
         try {
-            if (window.firebaseReady && typeof window.firebaseReady.then === 'function') {
-                const ok = await window.firebaseReady;
-                // Keep existing local flag in sync for legacy checks
-                if (ok) {
-                    firebaseReady = true;
-                } else {
-                    firebaseReady = false;
-                }
-                // Double-check readiness after promise resolves
-                if (ok && this.isFirebaseReady()) {
-                    return true;
-                }
-                return false;
+            const promise = typeof window.initFirebase === 'function' ? window.initFirebase() : window.firebaseReady;
+            if (promise && typeof promise.then === 'function') {
+                const ok = await promise;
+                return !!(ok && this.isFirebaseReady());
             }
-            // If firebaseReady isn't a promise (legacy), fall back to readiness check
-            const ok = this.isFirebaseReady();
-            if (ok) {
-                firebaseReady = true;
-                return true;
-            }
-            firebaseReady = false;
-            return false;
+            return !!this.isFirebaseReady();
         } catch (e) {
             console.error('firebaseReady promise rejected:', e);
-            firebaseReady = false;
             return false;
         }
     },
@@ -81,41 +63,13 @@ window.AuthManager = {
             });
         }
 
-        // Firebase readiness gate (global promise)
-        // Keep existing lines above intact; additionally sync the local flag when the global promise resolves.
-        try {
-            if (window.firebaseReady && typeof window.firebaseReady.then === 'function') {
-                window.firebaseReady.then((ok) => {
-                    if (ok) {
-                        firebaseReady = true;
-                    }
-                }).catch((e) => {
-                    console.error('firebaseReady promise error (init):', e);
-                });
-            }
-        } catch (e) {
-            console.error('Failed to attach firebaseReady listener:', e);
-        }
-
-        
-        if (!this.isFirebaseReady()) {
-            // Only show error if file:// protocol, otherwise wait for Firebase to initialize
-            if (window.location.protocol === 'file:') {
-                // Already handled by firebase-config.js blocking screen
-                return this.initLocalMode();
-            }
-            // Don't show error yet - Firebase might still be loading
-            firebaseLoadingState = 'waiting';
-        }
-
-        // Wait for Firebase auth state before showing any errors
-        if (this.isFirebaseReady() && window.firebaseAuth) {
+        // Attach auth state listener only after Firebase readiness promise resolves
+        const attachAuthListener = () => {
+            if (!window.firebaseAuth) return;
             window.firebaseAuth.onAuthStateChanged(async (user) => {
                 firebaseLoadingState = 'ready';
                 this.hideLoadingState();
                 // A/B/E: mark Firebase ready only AFTER onAuthStateChanged fires at least once
-                try { this.markFirebaseReady?.(); } catch (e) { console.error('markFirebaseReady failed:', e); }
-                
                 if (user && user.uid) {
                 // Clear any previous user's data before loading new user
                 if (this.currentUser && this.currentUser.uid && this.currentUser.uid !== user.uid) {
@@ -223,22 +177,25 @@ window.AuthManager = {
                 document.getElementById("welcome-screen")?.classList.remove("hidden");
                 }
             });
-        } else {
-            // Firebase not ready - wait a bit, then check again
-            setTimeout(() => {
-                if (!this.isFirebaseReady() && window.location.protocol !== 'file:') {
-                    // Only show error if still not ready after delay and not file://
-                    if (typeof navigator !== 'undefined' && navigator.onLine === false) {
-                        this.handleRealOffline();
-                    }
-                }
-            }, 2000);
-        }
-    },
+        };
 
-    markFirebaseReady() {
-        firebaseReady = true;
-        console.log('Firebase fully initialized');
+        if (window.location.protocol === 'file:') {
+            return this.initLocalMode();
+        }
+
+        const promise = typeof window.initFirebase === 'function' ? window.initFirebase() : window.firebaseReady;
+        if (promise && typeof promise.then === 'function') {
+            promise.then((ok) => {
+                if (ok) {
+                    this.hideLoadingState();
+                    attachAuthListener();
+                }
+            }).catch(() => {});
+        } else {
+            if (this.isFirebaseReady() && window.firebaseAuth) {
+                attachAuthListener();
+            }
+        }
     },
     // ===============================
     // AUTH ACTIONS
