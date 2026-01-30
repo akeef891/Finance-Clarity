@@ -986,45 +986,15 @@
         </div>
     </div>
 
-    <!-- Auth stub + lazy Firebase loader: Firebase loads only when user opens Sign In/Sign Up -->
-    <script>
-    (function(){
-      function loadScript(src){return new Promise(function(r,e){var s=document.createElement('script');s.src=src;s.onload=r;s.onerror=e;document.body.appendChild(s);});}
-      window.initFirebase = window.initFirebase || function(){return window.firebaseReady || Promise.resolve(false);};
-      window.firebaseReady = window.firebaseReady || Promise.resolve(false);
-      window.isFirebaseAvailable = window.isFirebaseAvailable || function(){return false;};
-      window.AuthManager = {
-        currentUser: null,
-        authStateListeners: [],
-        hasLoadedInitialData: false,
-        isAuthenticated: function(){return false;},
-        getCurrentUser: function(){return null;},
-        isFirebaseReady: function(){return false;},
-        waitForFirebaseReady: function(){return Promise.resolve(false);},
-        init: function(){},
-        onAuthStateChange: function(cb){this.authStateListeners.push(cb);},
-        saveHistoryEntry: function(){return Promise.resolve();},
-        saveUserData: function(){return Promise.resolve();},
-        hideLoadingState: function(){},
-        notifyAuthStateChange: function(){}
-      };
-      window.loadFirebaseIfNeeded = function(){
-        if (window.firebaseAuth) return Promise.resolve();
-        if (window._firebaseLoadInProgress) return window._firebaseLoadInProgress;
-        var base = 'https://www.gstatic.com/firebasejs/10.7.1/';
-        window._firebaseLoadInProgress = loadScript(base + 'firebase-app-compat.js')
-          .then(function(){return loadScript(base + 'firebase-auth-compat.js');})
-          .then(function(){return loadScript(base + 'firebase-firestore-compat.js');})
-          .then(function(){return loadScript('firebase-config.js');})
-          .then(function(){return loadScript('auth.js');})
-          .then(function(){window._firebaseLoadInProgress = null;});
-        return window._firebaseLoadInProgress;
-      };
-    })();
-    </script>
-    <script defer src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-    <script defer src="script.js"></script>
-    <script defer src="charts.js"></script>    
+    <!-- Firebase: single load at bottom of body (no duplicates) -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="firebase-config.js"></script>
+    <script src="auth.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="script.js"></script>
+    <script src="charts.js"></script>    
     <script>
     (function(){
       function loadScript(src){return new Promise(function(r,e){var s=document.createElement('script');s.src=src;s.onload=r;s.onerror=e;document.body.appendChild(s);});}
@@ -2161,20 +2131,6 @@
         let currentAuthTab = 'signin';
 
         function showAuthModal(tab = 'signin') {
-            // Lazy-load Firebase only when user opens Sign In/Sign Up (PageSpeed optimization)
-            if (!window.firebaseAuth && typeof window.loadFirebaseIfNeeded === 'function') {
-                var errEl = document.getElementById('auth-error');
-                var btn = document.getElementById('auth-submit-btn');
-                if (btn) { btn.disabled = true; btn.textContent = 'Loading...'; }
-                window.loadFirebaseIfNeeded().then(function() {
-                    if (btn) { btn.disabled = false; btn.textContent = tab === 'signup' ? 'Sign Up' : 'Sign In'; }
-                    showAuthModal(tab);
-                }).catch(function() {
-                    if (btn) { btn.disabled = false; btn.textContent = tab === 'signup' ? 'Sign Up' : 'Sign In'; }
-                    if (errEl) { errEl.textContent = 'Could not load sign-in. Please refresh.'; errEl.style.display = 'block'; errEl.style.color = '#ff4757'; }
-                });
-                return;
-            }
             // Check Firebase availability and update UI
             if (typeof AuthManager !== 'undefined' && typeof AuthManager.isFirebaseReady === 'function') {
                 const submitBtn = document.getElementById('auth-submit-btn');
@@ -3963,9 +3919,4 @@
 </body>
 </html>
 
-<script>
-    if (window.location.pathname === "/" && document.referrer.includes("netlify.app")) {
-      document.querySelector(".form-success")?.removeAttribute("hidden");
-    }
-  </script>
   
