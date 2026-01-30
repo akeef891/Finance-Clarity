@@ -1,10 +1,14 @@
 // ============================================
 // AUTHENTICATION MANAGEMENT (FIXED & STABLE)
 // ============================================
+// Preserve listeners registered with stub before Firebase lazy-load
+var _stubListeners = (window.AuthManager && Array.isArray(window.AuthManager.authStateListeners))
+    ? window.AuthManager.authStateListeners.slice()
+    : [];
 
 window.AuthManager = {
     currentUser: null,
-    authStateListeners: [],
+    authStateListeners: _stubListeners,
     historyUnsubscribe: null,
     isLoadingData: false,
     hasLoadedInitialData: false,

@@ -2,12 +2,11 @@
 <html lang="en">
 <head>
     <style>
+        body { opacity: 0; transition: opacity .3s ease; }
+      </style>           
+    <style>
   html, body {
     background: #0d1117;
-  }
-  body {
-    visibility: hidden;
-    opacity: 0;
   }
 </style>
     <meta charset="UTF-8">
@@ -18,7 +17,7 @@
     <link rel="preconnect" href="https://www.googletagmanager.com" crossorigin>
     <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
     <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
-
+    <link rel="preload" as="image" href="/images/hero.webp" fetchpriority="high">
     <!-- Google tag (gtag.js) - already async, does not block rendering -->
      <script async src="https://www.googletagmanager.com/gtag/js?id=G-9W726KFNR1"></script>
     <script>
@@ -33,14 +32,14 @@
     <meta name="author" content="Mohammed Akeef">
     <meta property="og:title" content="Finance Clarity – smart Personal Finance Tracker">
     <meta property="og:description" content="Track income, expenses, savings goals and affordability in one interactive dashboard.">
-    <meta property="og:image" content="https://finance-clarity.netlify.app/preview.png">
+    <meta property="og:image" content="https://finance-clarity.netlify.app/preview.webp">
     <meta property="og:url" content="https://finance-clarity.netlify.app">
     <meta property="og:type" content="website">
     <!-- Prevent favicon.ico 404 (no UI impact) -->
     <link rel="icon" href="data:image/x-icon;base64,AAABAAEAEBAAAAEAIABoBAAAFgAAACgAAAAQAAAAIAAAAAEAIAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==">
 
-    <link rel="preload" href="style.css" as="style">
-    <link rel="stylesheet" href="style.css">
+    <link rel="preload" href="style.css" as="style" onload="this.rel='stylesheet'">
+<noscript><link rel="stylesheet" href="style.css"></noscript>
     <link rel="preload" href="preview.png" as="image">
     <style>
 
@@ -413,31 +412,31 @@
             <div class="charts-grid">
                 <div class="chart-card">
                     <h3 class="chart-title">Income vs Expenses</h3>
-                    <div class="chart-container">
+                    <div class="chart-container" style="min-height:300px">
                         <canvas id="incomeExpenseChart"></canvas>
-                    </div>
+                    </div>                    
                 </div>
                 <div class="chart-card">
                     <h3 class="chart-title">Category Spending</h3>
-                    <div class="chart-container">
+                    <div class="chart-container" style="min-height:300px">
                         <canvas id="expensePieChart"></canvas>
                     </div>
                 </div>
                 <div class="chart-card">
                     <h3 class="chart-title">Savings Trend</h3>
-                    <div class="chart-container">
+                    <div class="chart-container" style="min-height:300px">
                         <canvas id="savingsLineChart"></canvas>
                     </div>
                 </div>
                 <div class="chart-card">
                     <h3 class="chart-title">Monthly Savings Comparison</h3>
-                    <div class="chart-container">
+                    <div class="chart-container" style="min-height:300px">
                         <canvas id="savingsBarChart"></canvas>
                     </div>
                 </div>
             </div>
         </section>
-
+    
         <!-- Footer -->
         <footer class="main-footer">
             <p>Finance Clarity Tool • Your data stays on your device</p>
@@ -987,20 +986,54 @@
         </div>
     </div>
 
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-    <script src="firebase-config.js"></script>
-    <script src="auth.js"></script>
-    <script src="script.js"></script>
-    <script src="charts.js"></script>
+    <!-- Auth stub + lazy Firebase loader: Firebase loads only when user opens Sign In/Sign Up -->
     <script>
     (function(){
       function loadScript(src){return new Promise(function(r,e){var s=document.createElement('script');s.src=src;s.onload=r;s.onerror=e;document.body.appendChild(s);});}
-      window.addEventListener('load',function(){
-        loadScript('ai-insights.js').then(function(){return loadScript('ai-chatbot.js');}).then(function(){return loadScript('animations.js');}).catch(function(){});
-      });
+      window.initFirebase = window.initFirebase || function(){return window.firebaseReady || Promise.resolve(false);};
+      window.firebaseReady = window.firebaseReady || Promise.resolve(false);
+      window.isFirebaseAvailable = window.isFirebaseAvailable || function(){return false;};
+      window.AuthManager = {
+        currentUser: null,
+        authStateListeners: [],
+        hasLoadedInitialData: false,
+        isAuthenticated: function(){return false;},
+        getCurrentUser: function(){return null;},
+        isFirebaseReady: function(){return false;},
+        waitForFirebaseReady: function(){return Promise.resolve(false);},
+        init: function(){},
+        onAuthStateChange: function(cb){this.authStateListeners.push(cb);},
+        saveHistoryEntry: function(){return Promise.resolve();},
+        saveUserData: function(){return Promise.resolve();},
+        hideLoadingState: function(){},
+        notifyAuthStateChange: function(){}
+      };
+      window.loadFirebaseIfNeeded = function(){
+        if (window.firebaseAuth) return Promise.resolve();
+        if (window._firebaseLoadInProgress) return window._firebaseLoadInProgress;
+        var base = 'https://www.gstatic.com/firebasejs/10.7.1/';
+        window._firebaseLoadInProgress = loadScript(base + 'firebase-app-compat.js')
+          .then(function(){return loadScript(base + 'firebase-auth-compat.js');})
+          .then(function(){return loadScript(base + 'firebase-firestore-compat.js');})
+          .then(function(){return loadScript('firebase-config.js');})
+          .then(function(){return loadScript('auth.js');})
+          .then(function(){window._firebaseLoadInProgress = null;});
+        return window._firebaseLoadInProgress;
+      };
+    })();
+    </script>
+    <script defer src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script defer src="script.js"></script>
+    <script defer src="charts.js"></script>    
+    <script>
+    (function(){
+      function loadScript(src){return new Promise(function(r,e){var s=document.createElement('script');s.src=src;s.onload=r;s.onerror=e;document.body.appendChild(s);});}
+      document.getElementById('ai-chatbot-toggle')
+.addEventListener('click', () => {
+  loadScript('ai-insights.js')
+  .then(()=>loadScript('ai-chatbot.js'))
+  .then(()=>loadScript('animations.js'));
+}, { once:true });
     })();
     </script>
     <script>
@@ -2128,6 +2161,20 @@
         let currentAuthTab = 'signin';
 
         function showAuthModal(tab = 'signin') {
+            // Lazy-load Firebase only when user opens Sign In/Sign Up (PageSpeed optimization)
+            if (!window.firebaseAuth && typeof window.loadFirebaseIfNeeded === 'function') {
+                var errEl = document.getElementById('auth-error');
+                var btn = document.getElementById('auth-submit-btn');
+                if (btn) { btn.disabled = true; btn.textContent = 'Loading...'; }
+                window.loadFirebaseIfNeeded().then(function() {
+                    if (btn) { btn.disabled = false; btn.textContent = tab === 'signup' ? 'Sign Up' : 'Sign In'; }
+                    showAuthModal(tab);
+                }).catch(function() {
+                    if (btn) { btn.disabled = false; btn.textContent = tab === 'signup' ? 'Sign Up' : 'Sign In'; }
+                    if (errEl) { errEl.textContent = 'Could not load sign-in. Please refresh.'; errEl.style.display = 'block'; errEl.style.color = '#ff4757'; }
+                });
+                return;
+            }
             // Check Firebase availability and update UI
             if (typeof AuthManager !== 'undefined' && typeof AuthManager.isFirebaseReady === 'function') {
                 const submitBtn = document.getElementById('auth-submit-btn');
@@ -3908,6 +3955,11 @@
   });
 </script>
 
+  <script>
+    window.addEventListener("load", () => {
+      document.body.style.opacity = "1";
+    });
+  </script>  
 </body>
 </html>
 
