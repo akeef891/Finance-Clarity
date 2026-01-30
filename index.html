@@ -41,13 +41,7 @@
 
     <link rel="preload" href="style.css" as="style">
     <link rel="stylesheet" href="style.css">
-
-    <!-- Non-critical JS: defer to avoid render blocking while preserving execution order -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" defer></script>
-    <!-- Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js" defer></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js" defer></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js" defer></script>
+    <link rel="preload" href="preview.png" as="image">
     <style>
 
         body {
@@ -993,13 +987,22 @@
         </div>
     </div>
 
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="firebase-config.js"></script>
     <script src="auth.js"></script>
-    <script src="script.js"></script> 
-    <script src="ai-insights.js"></script>
-    <script src="ai-chatbot.js"></script>
+    <script src="script.js"></script>
     <script src="charts.js"></script>
-    <script src="animations.js"></script>
+    <script>
+    (function(){
+      function loadScript(src){return new Promise(function(r,e){var s=document.createElement('script');s.src=src;s.onload=r;s.onerror=e;document.body.appendChild(s);});}
+      window.addEventListener('load',function(){
+        loadScript('ai-insights.js').then(function(){return loadScript('ai-chatbot.js');}).then(function(){return loadScript('animations.js');}).catch(function(){});
+      });
+    })();
+    </script>
     <script>
         let selectedPurchaseType = 'one-time';
         let isDataLoading = false;
