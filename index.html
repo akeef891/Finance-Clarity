@@ -1,6 +1,15 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <style>
+  html, body {
+    background: #0d1117;
+  }
+  body {
+    visibility: hidden;
+    opacity: 0;
+  }
+</style>
     <meta charset="UTF-8">
     <meta name="google-site-verification" content="xG1FdS9JBfKaxxV3J1GBFw8cLgWhrg4PGEUfKav2PHQ" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -30,9 +39,8 @@
     <!-- Prevent favicon.ico 404 (no UI impact) -->
     <link rel="icon" href="data:image/x-icon;base64,AAABAAEAEBAAAAEAIABoBAAAFgAAACgAAAAQAAAAIAAAAAEAIAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==">
 
-    <!-- Critical CSS: preload, then apply without blocking rendering -->
-    <link rel="preload" href="style.css" as="style" onload="this.rel='stylesheet'">
-    <noscript><link rel="stylesheet" href="style.css"></noscript>
+    <link rel="preload" href="style.css" as="style">
+    <link rel="stylesheet" href="style.css">
 
     <!-- Non-critical JS: defer to avoid render blocking while preserving execution order -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" defer></script>
@@ -3888,6 +3896,14 @@
         }
     }
     </style>
+
+<script>
+  window.addEventListener("load", () => {
+    document.body.style.visibility = "visible";
+    document.body.style.opacity = "1";
+    document.body.style.transition = "opacity 0.3s ease";
+  });
+</script>
 
 </body>
 </html>
