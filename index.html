@@ -1011,30 +1011,35 @@
             
             window.firebaseLoaded = true;
             window._firebaseLoadPromise = new Promise((resolve, reject) => {
-                const scripts = [
-                    "https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js",
-                    "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js",
-                    "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js",
-                    "firebase-config.js",
-                    "auth.js"
-                ];
+                // Sequential loading using Promise chaining to ensure proper dependency order
+                function loadScript(src) {
+                    return new Promise((scriptResolve, scriptReject) => {
+                        const s = document.createElement("script");
+                        s.src = src;
+                        s.defer = true;
+                        s.onload = scriptResolve;
+                        s.onerror = scriptReject;
+                        document.body.appendChild(s);
+                    });
+                }
                 
-                let loaded = 0;
-                const onLoad = () => {
-                    loaded++;
-                    if (loaded === scripts.length) {
-                        resolve();
-                    }
-                };
-                
-                scripts.forEach(src => {
-                    const s = document.createElement("script");
-                    s.src = src;
-                    s.defer = true;
-                    s.onload = onLoad;
-                    s.onerror = reject;
-                    document.body.appendChild(s);
-                });
+                // Load scripts sequentially: Firebase SDKs -> firebase-config.js -> auth.js
+                loadScript("https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js")
+                    .then(() => loadScript("https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"))
+                    .then(() => loadScript("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"))
+                    .then(() => loadScript("firebase-config.js"))
+                    .then(() => loadScript("auth.js"))
+                    .then(() => {
+                        // Verify AuthManager loaded successfully
+                        if (window.AuthManager) {
+                            console.log("AuthManager loaded");
+                            resolve();
+                        } else {
+                            console.error("AuthManager not found after loading auth.js");
+                            reject(new Error("AuthManager not found"));
+                        }
+                    })
+                    .catch(reject);
             });
             
             return window._firebaseLoadPromise;
