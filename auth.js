@@ -1,12 +1,12 @@
 // ============================================
 // AUTHENTICATION MANAGEMENT (FIXED & STABLE)
 // ============================================
-// Preserve listeners registered with stub before Firebase lazy-load
+window.AuthManager = (function(){
 var _stubListeners = (window.AuthManager && Array.isArray(window.AuthManager.authStateListeners))
     ? window.AuthManager.authStateListeners.slice()
     : [];
 
-window.AuthManager = {
+var AuthManager = {
     currentUser: null,
     authStateListeners: _stubListeners,
     historyUnsubscribe: null,
@@ -893,11 +893,6 @@ window.saveHistoryEntry = (...args) =>
 window.saveUserData = (...args) =>
     window.AuthManager?.saveUserData?.(...args);
 
-// INIT
-document.readyState === "loading"
-    ? document.addEventListener("DOMContentLoaded", () => AuthManager.init())
-    : AuthManager.init();
-
 // ===============================
 // AUTH SAFETY COMPATIBILITY LAYER
 // ===============================
@@ -916,6 +911,13 @@ window.waitForAuthReady = function () {
 };
 
 // ===== FINAL GLOBAL EXPORTS (CRITICAL) =====
-window.AuthManager = AuthManager;
 window.saveHistoryEntry = (...args) => window.AuthManager?.saveHistoryEntry?.(...args);
-window.saveUserData = (...args) => window.AuthManager?.saveUserData?.(...args);   
+window.saveUserData = (...args) => window.AuthManager?.saveUserData?.(...args);
+
+return AuthManager;
+})();
+
+// INIT (script.js calls AuthManager.init() on DOMContentLoaded)
+document.readyState === "loading"
+    ? document.addEventListener("DOMContentLoaded", () => AuthManager.init())
+    : AuthManager.init();   
