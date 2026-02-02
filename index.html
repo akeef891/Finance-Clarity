@@ -2,11 +2,12 @@
 <html lang="en">
 <head>
     <style>
-        body { opacity: 0; transition: opacity .3s ease; }
-      </style>           
-    <style>
   html, body {
     background: #0d1117;
+  }
+  body {
+    visibility: hidden;
+    opacity: 0;
   }
 </style>
     <meta charset="UTF-8">
@@ -37,7 +38,10 @@
     <meta property="og:type" content="website">
     <!-- Prevent favicon.ico 404 (no UI impact) -->
     <link rel="icon" href="data:image/x-icon;base64,AAABAAEAEBAAAAEAIABoBAAAFgAAACgAAAAQAAAAIAAAAAEAIAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==">
-
+    <style>
+        body { visibility:hidden; opacity:0; }
+    </style>
+        
     <link rel="preload" href="style.css" as="style" onload="this.rel='stylesheet'">
 <noscript><link rel="stylesheet" href="style.css"></noscript>
     <link rel="preload" href="preview.png" as="image">
@@ -118,7 +122,13 @@
         <!-- Header (visible on all pages) -->
         <header class="main-header">
             <div class="logo-section">
-                <div class="logo-icon">✨</div>
+                <img src="logo.webp"
+                     alt="Finance Clarity Logo"
+                     class="hero-logo-img"
+                     width="44"
+                     height="44"
+                     loading="eager"
+                     fetchpriority="high">
                 <div class="logo-text">
                     <h1>Finance Clarity</h1>
                     <p class="tagline">Know your money</p>
@@ -914,7 +924,14 @@
     <!-- Welcome Screen (shown when not authenticated) -->
     <div id="welcome-screen" class="welcome-screen">
         <div class="welcome-content">
-            <div class="logo-icon" style="width: 80px; height: 80px; font-size: 40px; margin: 0 auto 24px;">✨</div>
+            <img src="logo.webp"
+                 alt="Finance Clarity Logo"
+                 class="hero-logo-img"
+                 width="80"
+                 height="80"
+                 loading="eager"
+                 fetchpriority="high"
+                 style="margin: 0 auto 24px;">
             <h1 style="font-size: 36px; margin-bottom: 12px; background: var(--gradient-teal); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;">Finance Clarity</h1>
             <p class="tagline" style="font-size: 18px; margin-bottom: 32px;">Know your money</p>
             <p style="color: var(--text-secondary); margin-bottom: 32px; max-width: 500px; text-align: center;">
@@ -986,15 +1003,47 @@
         </div>
     </div>
 
-    <!-- Firebase: single load at bottom of body (no duplicates) -->
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
-    <script src="firebase-config.js"></script>
-    <script src="auth.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-    <script src="script.js"></script>
-    <script src="charts.js"></script>    
+    <!-- Firebase lazy loader: loads only when login/signup modal opens -->
+    <script>
+        function loadFirebase() {
+            if (window.firebaseLoaded) return Promise.resolve();
+            if (window._firebaseLoadPromise) return window._firebaseLoadPromise;
+            
+            window.firebaseLoaded = true;
+            window._firebaseLoadPromise = new Promise((resolve, reject) => {
+                const scripts = [
+                    "https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js",
+                    "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js",
+                    "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js",
+                    "firebase-config.js",
+                    "auth.js"
+                ];
+                
+                let loaded = 0;
+                const onLoad = () => {
+                    loaded++;
+                    if (loaded === scripts.length) {
+                        resolve();
+                    }
+                };
+                
+                scripts.forEach(src => {
+                    const s = document.createElement("script");
+                    s.src = src;
+                    s.defer = true;
+                    s.onload = onLoad;
+                    s.onerror = reject;
+                    document.body.appendChild(s);
+                });
+            });
+            
+            return window._firebaseLoadPromise;
+        }
+    </script>
+    
+    <script defer src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script defer src="script.js"></script>
+    <script defer src="charts.js"></script>    
     <script>
     (function(){
       function loadScript(src){return new Promise(function(r,e){var s=document.createElement('script');s.src=src;s.onload=r;s.onerror=e;document.body.appendChild(s);});}
@@ -2131,6 +2180,10 @@
         let currentAuthTab = 'signin';
 
         function showAuthModal(tab = 'signin') {
+            // Lazy-load Firebase only when login/signup modal opens
+            if (typeof loadFirebase === 'function') {
+                loadFirebase();
+            }
             // Check Firebase availability and update UI
             if (typeof AuthManager !== 'undefined' && typeof AuthManager.isFirebaseReady === 'function') {
                 const submitBtn = document.getElementById('auth-submit-btn');
@@ -3869,7 +3922,7 @@
         } catch (e) {
             // Silent fail
         }
-    };
+    }; 
 
     // Close modal when clicking outside
     window.addEventListener('click', function(event) {
@@ -3910,12 +3963,7 @@
     document.body.style.transition = "opacity 0.3s ease";
   });
 </script>
-
-  <script>
-    window.addEventListener("load", () => {
-      document.body.style.opacity = "1";
-    });
-  </script>  
+    
 </body>
 </html>
 

@@ -805,6 +805,16 @@ body {
     gap: 14px;
 }
 
+.hero-logo-img {
+    width: 44px;
+    height: 44px;
+    object-fit: contain;
+    border-radius: 12px;
+    box-shadow: var(--shadow-glow);
+    transition: transform var(--transition-fast);
+    animation: pulse 2s ease-in-out infinite;
+}
+
 .logo-icon {
     width: 44px;
     height: 44px;
@@ -829,7 +839,8 @@ body {
     }
 }
 
-.logo-icon:hover {
+.logo-icon:hover,
+.hero-logo-img:hover {
     transform: scale(1.1) rotate(5deg);
 }
 
@@ -3586,12 +3597,12 @@ body:not(.page-loading) * {
     }
     
     .modal-content {
-        width: 100%;
-        max-width: 100%;
-        margin: 0;
-        border-radius: 0;
-        max-height: 100vh;
-        height: 100vh;
+        width: 92%;
+        max-width: 420px;
+        margin: auto;
+        border-radius: 16px;
+        max-height: 85vh;
+        height: auto;
     }
     
     .modal-header {
@@ -5229,4 +5240,31 @@ body {
 
 .page-section {
   scroll-margin-top: 80px;
+}
+
+/* Universal Mobile Fix */
+@media (max-width: 768px) {
+
+    .container,
+    .page-container,
+    .content-card,
+    .overview-card {
+        min-width: 0;
+        width: 100%;
+    }
+
+    .charts-grid,
+    .cards-grid,
+    .overview-grid {
+        grid-template-columns: 1fr !important;
+    }
+
+    button, input, select {
+        min-height: 44px;
+    }
+
+    .modal-body {
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+    }
 }
