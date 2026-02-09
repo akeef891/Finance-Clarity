@@ -4538,8 +4538,9 @@ body:not(.page-loading) * {
 /* Mobile responsiveness for chatbot */
 @media (max-width: 768px) {
     .ai-chatbot-container {
-        bottom: 16px;
-        right: 16px;
+        position: static;
+        bottom: auto;
+        right: auto;
     }
 
     .ai-chatbot-toggle {
