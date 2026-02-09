@@ -2992,6 +2992,35 @@ function loadFirebaseSDK(callback){
             }
         };
         
+        // Ensure navbar buttons always navigate correctly
+        document.addEventListener('DOMContentLoaded', function () {
+            var dashboardBtn = document.getElementById('dashboardBtn');
+            var goalsBtn = document.getElementById('goalsBtn');
+            var aboutBtn = document.getElementById('aboutBtn');
+            var contactBtn = document.getElementById('contactBtn');
+
+            if (dashboardBtn) {
+                dashboardBtn.addEventListener('click', function () {
+                    if (typeof window.navigateTo === 'function') window.navigateTo('dashboard');
+                });
+            }
+            if (goalsBtn) {
+                goalsBtn.addEventListener('click', function () {
+                    if (typeof window.navigateTo === 'function') window.navigateTo('goals');
+                });
+            }
+            if (aboutBtn) {
+                aboutBtn.addEventListener('click', function () {
+                    if (typeof window.navigateTo === 'function') window.navigateTo('about');
+                });
+            }
+            if (contactBtn) {
+                contactBtn.addEventListener('click', function () {
+                    if (typeof window.navigateTo === 'function') window.navigateTo('contact');
+                });
+            }
+        });
+        
         // Alias for backward compatibility
         window.showPage = window.navigateTo;
         
