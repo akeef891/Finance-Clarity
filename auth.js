@@ -919,5 +919,5 @@ return AuthManager;
 
 // INIT (script.js calls AuthManager.init() on DOMContentLoaded)
 document.readyState === "loading"
-    ? document.addEventListener("DOMContentLoaded", () => AuthManager.init())
-    : AuthManager.init();   
+    ? document.addEventListener("DOMContentLoaded", () => window.AuthManager?.init?.())
+    : window.AuthManager?.init?.();   

@@ -922,6 +922,6 @@ const savings = savingsElement
 
 document.addEventListener("DOMContentLoaded", () => {
   if(window.AuthManager){
-    AuthManager.init();
+    window.AuthManager.init();
   }
 });
