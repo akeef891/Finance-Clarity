@@ -917,7 +917,10 @@ window.saveUserData = (...args) => window.AuthManager?.saveUserData?.(...args);
 return AuthManager;
 })();
 
+// Ensure global identifier for strict-mode and inline scripts that use bare "AuthManager"
+var AuthManager = window.AuthManager;
+
 // INIT (script.js calls AuthManager.init() on DOMContentLoaded)
 document.readyState === "loading"
     ? document.addEventListener("DOMContentLoaded", () => window.AuthManager?.init?.())
-    : window.AuthManager?.init?.();   
+    : window.AuthManager?.init?.();
