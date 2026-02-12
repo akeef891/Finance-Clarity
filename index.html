@@ -18,7 +18,6 @@
     <link rel="preconnect" href="https://www.googletagmanager.com" crossorigin>
     <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
     <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
-    <link rel="preload" as="image" href="/images/hero.webp" fetchpriority="high">
     <!-- Google tag (gtag.js) - already async, does not block rendering -->
      <script async src="https://www.googletagmanager.com/gtag/js?id=G-9W726KFNR1"></script>
     <script>
@@ -986,37 +985,21 @@
     <!-- Chart.js (safe to defer) -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
 
-    <!-- Firebase SDK Lazy Loader (SDK ONLY) -->
-    <script>
-function loadFirebaseSDK(callback){
-  if(window.firebase){ callback(); return; }
+   <!-- Firebase SDKs FIRST -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 
-  const scripts = [
-    "https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js",
-    "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js",
-    "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js",
-    "firebase-config.js"
-  ];
+<!-- Firebase Config -->
+<script src="js/firebase-config.js"></script>
 
-  // Ensure deterministic load/exec order to prevent firebase-auth INTERNAL errors
-  function loadScript(src){
-    return new Promise((resolve) => {
-      const s = document.createElement("script");
-      s.src = src;
-      s.async = false;
-      s.onload = () => resolve(true);
-      s.onerror = () => { try { console.error("Failed to load:", src); } catch (e) {} resolve(false); };
-      document.body.appendChild(s);
-    });
-  }
+<!-- AuthManager MUST LOAD BEFORE ANYTHING USES IT -->
+<script src="js/auth-manager.js"></script>
 
-  loadScript(scripts[0])
-    .then(() => loadScript(scripts[1]))
-    .then(() => loadScript(scripts[2]))
-    .then(() => loadScript(scripts[3]))
-    .then(() => callback());
-}
-    </script>
+<!-- Other JS files AFTER AuthManager -->
+<script src="js/dashboard.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/main.js"></script>
 
     <!-- CORE APP LOGIC — MUST LOAD IMMEDIATELY -->
     <script src="auth.js" defer></script>
