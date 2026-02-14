@@ -123,39 +123,39 @@ var AuthManager = {
                 if (this.isLoadingData) return;
                 this.isLoadingData = true;
 
-                try {
-                    // CRITICAL SEQUENCING: Load user document first and wait for completion
-                    await this.loadUserData(user);
-                    
-                    // Small delay to ensure user document is fully written before accessing subcollections
-                    await new Promise(resolve => setTimeout(resolve, 100));
-                    
-                    // Load finance data from Firestore (source of truth) - with caching
-                    await this.loadFinanceDataFromFirestore();
-                    
-                    // Load history from Firestore - with caching (non-blocking for performance)
-                    this.loadHistoryFromFirestore().catch(() => {
-                        // Silent fail - history is non-critical for initial dashboard load
+                const self = this;
+                const runFirestoreLoad = async () => {
+                    try {
+                        await self.loadUserData(user);
+                        await new Promise(resolve => setTimeout(resolve, 100));
+                        await self.loadFinanceDataFromFirestore();
+                        self.loadHistoryFromFirestore().catch(() => {});
+                        if (window.DataManager) {
+                            window.DataManager._initData();
+                        }
+                        self.hasLoadedInitialData = true;
+                        self.notifyAuthStateChange(user);
+                        if (typeof init === 'function' && !window.hasInitialized) {
+                            window.hasInitialized = true;
+                            init();
+                        }
+                    } catch (e) {
+                        if (self.cachedFinanceData && window.DataManager) {
+                            window.DataManager._initData();
+                        }
+                        self.isLoadingData = false;
+                    }
+                };
+
+                if (typeof requestIdleCallback !== 'undefined') {
+                    requestIdleCallback(() => { runFirestoreLoad(); }, { timeout: 2500 });
+                } else if (typeof window.addEventListener === 'function') {
+                    window.addEventListener('load', function onLoad() {
+                        window.removeEventListener('load', onLoad);
+                        runFirestoreLoad();
                     });
-
-                    // Initialize DataManager with loaded data
-                    if (window.DataManager) {
-                        window.DataManager._initData();
-                    }
-
-                    this.hasLoadedInitialData = true;
-                    this.notifyAuthStateChange(user);
-
-                    if (typeof init === 'function' && !window.hasInitialized) {
-                        window.hasInitialized = true;
-                        init();
-                    }
-                } catch (e) {
-                    // Silent fail - use cached data if available
-                    if (this.cachedFinanceData && window.DataManager) {
-                        window.DataManager._initData();
-                    }
-                    this.isLoadingData = false;
+                } else {
+                    runFirestoreLoad();
                 }
             } else {
                 // Clear UI state only (preserve data in Firestore and localStorage)
@@ -920,7 +920,18 @@ return AuthManager;
 // Ensure global identifier for strict-mode and inline scripts that use bare "AuthManager"
 var AuthManager = window.AuthManager;
 
-// INIT (script.js calls AuthManager.init() on DOMContentLoaded)
-document.readyState === "loading"
-    ? document.addEventListener("DOMContentLoaded", () => window.AuthManager?.init?.())
-    : window.AuthManager?.init?.();
+// INIT only after DOM is ready - prevents mobile Lighthouse freeze
+function runAuthInit() {
+    if (window.AuthManager && typeof window.AuthManager.init === "function") {
+        window.AuthManager.init();
+    }
+}
+if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", runAuthInit);
+} else {
+    if (typeof requestIdleCallback !== "undefined") {
+        requestIdleCallback(runAuthInit, { timeout: 500 });
+    } else {
+        setTimeout(runAuthInit, 0);
+    }
+}

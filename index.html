@@ -994,17 +994,20 @@
     <script src="/script.js"></script>
     <script src="/charts.js" defer></script>    
     <script>
-    (function(){
+    document.addEventListener("DOMContentLoaded", function() {
       function loadScript(src){return new Promise(function(r,e){var s=document.createElement('script');s.src=src;s.onload=r;s.onerror=e;document.body.appendChild(s);});}
-      document.getElementById('ai-chatbot-toggle')
-.addEventListener('click', () => {
-  loadScript('/ai-insights.js')
-  .then(()=>loadScript('/ai-chatbot.js'))
-  .then(()=>loadScript('/animations.js'));
-}, { once:true });
-    })();
+      var toggle = document.getElementById('ai-chatbot-toggle');
+      if (toggle) {
+        toggle.addEventListener('click', function() {
+          loadScript('/ai-insights.js')
+          .then(function(){return loadScript('/ai-chatbot.js');})
+          .then(function(){return loadScript('/animations.js');});
+        }, { once: true });
+      }
+    });
     </script>
     <script>
+    document.addEventListener("DOMContentLoaded", function() {
         let selectedPurchaseType = 'one-time';
         let isDataLoading = false;
         let isInitialLoad = true;
@@ -3038,8 +3041,9 @@
         
         // Initialize routing when DOM is ready
         function initializePageViews() {
-            // Ensure only dashboard is visible on initial load
-            document.querySelectorAll('.page-view').forEach(v => {
+            var pageViews = document.querySelectorAll('.page-view');
+            if (!pageViews || !pageViews.length) return;
+            pageViews.forEach(v => {
                 if (v.id === 'view-dashboard') {
                     v.style.display = 'block';
                     v.classList.add('active');
@@ -3049,10 +3053,10 @@
                 }
             });
             
-            // Set active nav button
-            document.querySelectorAll('.header-btn').forEach(btn => {
-                btn.classList.remove('active');
-            });
+            var headerBtns = document.querySelectorAll('.header-btn');
+            if (headerBtns && headerBtns.length) {
+                headerBtns.forEach(btn => { btn.classList.remove('active'); });
+            }
             const dashboardBtn = document.getElementById('nav-dashboard');
             if (dashboardBtn) {
                 dashboardBtn.classList.add('active');
@@ -3093,10 +3097,12 @@
 
         // Initialize on page load
         // init() will be called after authentication
+    });
     </script>
 
     <!--===================== FIX: RECENT ACTIVITY RENDER ===================== -->
     <script>
+    document.addEventListener("DOMContentLoaded", function() {
     if (window.DataManager && !DataManager.getHistory) {
         DataManager.getHistory = function () {
             try {
@@ -3112,12 +3118,15 @@
     }
     
     // Use renderRecentActivity from script.js
-    AuthManager.onAuthStateChange(() => {
-        setTimeout(() => {
-            if (typeof window.renderRecentActivity === 'function') {
-                window.renderRecentActivity();
-            }
-        }, 300);
+    if (typeof AuthManager !== 'undefined' && AuthManager.onAuthStateChange) {
+        AuthManager.onAuthStateChange(function() {
+            setTimeout(function() {
+                if (typeof window.renderRecentActivity === 'function') {
+                    window.renderRecentActivity();
+                }
+            }, 300);
+        });
+    }
     });
     </script>
     

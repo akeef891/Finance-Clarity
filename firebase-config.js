@@ -136,12 +136,19 @@ function initFirebase() {
     return window._firebaseReadyPromise;
 }
 
-// Single global promise: same as initFirebase() for await-based guards
+// Defer Firebase init until DOM ready to prevent mobile Lighthouse freeze
 window.firebaseReady = null;
-if (window.location.protocol !== 'file:' && window.isFirebaseAvailable()) {
-    window.firebaseReady = initFirebase();
-} else {
-    window.firebaseReady = Promise.resolve(false);
-}
 window.initFirebase = initFirebase;
+function startFirebase() {
+    if (window.location.protocol !== 'file:' && window.isFirebaseAvailable()) {
+        window.firebaseReady = initFirebase();
+    } else {
+        window.firebaseReady = Promise.resolve(false);
+    }
+}
+if (typeof document !== 'undefined' && document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', startFirebase);
+} else {
+    startFirebase();
+}
 

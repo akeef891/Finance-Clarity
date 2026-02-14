@@ -5,8 +5,8 @@
 const AnimationManager = {
     // Animated Background System - Optimized for Performance
     initAnimatedBackground() {
-        // Skip on mobile for performance
-        if (window.innerWidth <= 768) {
+        // Disable background particle animations on mobile to prevent Lighthouse freeze
+        if (typeof window.innerWidth !== 'undefined' && window.innerWidth < 768) {
             return;
         }
         
