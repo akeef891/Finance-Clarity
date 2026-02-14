@@ -1129,10 +1129,12 @@
             }
         }
 
-        // Modal Functions
+        // Modal Functions (attach to window for onclick global scope)
         function showAddIncomeModal() {
-            document.getElementById('income-modal').classList.add('active');
+            var el = document.getElementById('income-modal');
+            if (el) el.classList.add('active');
         }
+        window.showAddIncomeModal = showAddIncomeModal;
 
         function closeIncomeModal() {
             document.getElementById('income-modal').classList.remove('active');
@@ -1141,8 +1143,10 @@
         }
 
         function showAddExpenseModal() {
-            document.getElementById('expense-modal').classList.add('active');
+            var el = document.getElementById('expense-modal');
+            if (el) el.classList.add('active');
         }
+        window.showAddExpenseModal = showAddExpenseModal;
 
         function closeExpenseModal() {
             document.getElementById('expense-modal').classList.remove('active');
@@ -1705,6 +1709,7 @@
             // Render history
             renderFullHistory();
         }
+        window.openHistoryModal = openHistoryModal;
 
         // Close history modal
         function closeHistoryModal() {
