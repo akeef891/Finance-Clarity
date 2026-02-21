@@ -651,12 +651,20 @@ var AuthManager = {
             if (this.cachedFinanceData.flexibleSpending) {
                 localStorage.setItem(userKeys.FLEXIBLE, JSON.stringify(this.cachedFinanceData.flexibleSpending));
             }
-            if (typeof window.rehydrateInputsFromFinanceData === 'function') {
-                window.rehydrateInputsFromFinanceData({
-                    income: this.cachedFinanceData.income || [],
-                    fixedExpenses: this.cachedFinanceData.fixedExpenses || [],
-                    flexibleSpending: this.cachedFinanceData.flexibleSpending || { food: 0, travel: 0, shopping: 0, miscellaneous: 0 }
-                });
+            var payload = {
+                income: Array.isArray(this.cachedFinanceData.income) ? this.cachedFinanceData.income : [],
+                fixedExpenses: Array.isArray(this.cachedFinanceData.fixedExpenses) ? this.cachedFinanceData.fixedExpenses : [],
+                flexibleSpending: (this.cachedFinanceData.flexibleSpending && typeof this.cachedFinanceData.flexibleSpending === 'object') ? this.cachedFinanceData.flexibleSpending : { food: 0, travel: 0, shopping: 0, miscellaneous: 0 }
+            };
+            var runRehydrate = function() {
+                if (typeof window.rehydrateInputsFromFinanceData === 'function') {
+                    window.rehydrateInputsFromFinanceData(payload);
+                }
+            };
+            if (typeof requestAnimationFrame !== 'undefined') {
+                requestAnimationFrame(runRehydrate);
+            } else {
+                setTimeout(runRehydrate, 0);
             }
             return;
         }
@@ -717,13 +725,21 @@ var AuthManager = {
                     } else {
                         localStorage.setItem(userKeys.FLEXIBLE, JSON.stringify({ food: 0, travel: 0, shopping: 0, miscellaneous: 0 }));
                     }
-                    // Rehydrate input fields after snapshot data is confirmed (runs only after data exists)
-                    if (typeof window.rehydrateInputsFromFinanceData === 'function') {
-                        window.rehydrateInputsFromFinanceData({
-                            income: data.income || [],
-                            fixedExpenses: data.fixedExpenses || [],
-                            flexibleSpending: (data.flexibleSpending && typeof data.flexibleSpending === 'object') ? data.flexibleSpending : { food: 0, travel: 0, shopping: 0, miscellaneous: 0 }
-                        });
+                    // Rehydrate input fields after snapshot data is confirmed (defer so DOM/script are ready)
+                    var payload = {
+                        income: Array.isArray(data.income) ? data.income : [],
+                        fixedExpenses: Array.isArray(data.fixedExpenses) ? data.fixedExpenses : [],
+                        flexibleSpending: (data.flexibleSpending && typeof data.flexibleSpending === 'object') ? data.flexibleSpending : { food: 0, travel: 0, shopping: 0, miscellaneous: 0 }
+                    };
+                    var runRehydrate = function() {
+                        if (typeof window.rehydrateInputsFromFinanceData === 'function') {
+                            window.rehydrateInputsFromFinanceData(payload);
+                        }
+                    };
+                    if (typeof requestAnimationFrame !== 'undefined') {
+                        requestAnimationFrame(runRehydrate);
+                    } else {
+                        setTimeout(runRehydrate, 0);
                     }
                 } else {
                     // New user - create finance document with default values
