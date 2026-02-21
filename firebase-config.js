@@ -139,6 +139,21 @@ function initFirebase() {
 // Defer Firebase init until DOM ready to prevent mobile Lighthouse freeze
 window.firebaseReady = null;
 window.initFirebase = initFirebase;
+
+// CRITICAL: Expose for inline onclick (e.g. showAuthModal) - must exist before any click in cold start
+window.loadFirebaseSDK = function(callback) {
+    var cb = typeof callback === 'function' ? callback : function() {};
+    if (typeof window.initFirebase !== 'function') {
+        cb();
+        return;
+    }
+    window.initFirebase().then(function() {
+        cb();
+    }).catch(function() {
+        cb();
+    });
+};
+
 function startFirebase() {
     if (window.location.protocol !== 'file:' && window.isFirebaseAvailable()) {
         window.firebaseReady = initFirebase();

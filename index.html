@@ -2238,6 +2238,7 @@
                 errorDiv.style.display = 'none';
             }
         }
+        window.closeAuthModal = closeAuthModal;
 
         function switchAuthTab(tab) {
             currentAuthTab = tab;
@@ -2256,6 +2257,7 @@
                 submitBtn.textContent = 'Sign Up';
             }
         }
+        window.switchAuthTab = switchAuthTab;
 
         async function handleAuth() {
             const email = document.getElementById('auth-email').value.trim();
@@ -2371,6 +2373,7 @@
                 }
             }
         }
+        window.handleAuth = handleAuth;
 
         async function handleSignOut() {
             if (confirm('Are you sure you want to sign out?')) {
