@@ -1029,6 +1029,8 @@
             loadIncome();
             loadFixedExpenses();
             loadFlexibleSpending();
+            // Rehydrate modal/dashboard input fields from saved data (after fetch completes)
+            rehydrateModalInputs();
             
             // PRIORITY 2: Update dashboard immediately - smooth fade-in
             updateDashboard();
@@ -1388,11 +1390,48 @@
 
         // Flexible Spending Management
         function loadFlexibleSpending() {
+            if (!window.DataManager || typeof DataManager.getFlexibleSpending !== 'function') return;
             const spending = DataManager.getFlexibleSpending();
-            document.getElementById('food-limit').value = spending.food || '';
-            document.getElementById('travel-limit').value = spending.travel || '';
-            document.getElementById('shopping-limit').value = spending.shopping || '';
-            document.getElementById('misc-limit').value = spending.miscellaneous || '';
+            if (!spending || typeof spending !== 'object') return;
+            var el;
+            el = document.getElementById('food-limit');
+            if (el && spending.food !== undefined) el.value = spending.food !== '' && spending.food != null ? String(spending.food) : '';
+            el = document.getElementById('travel-limit');
+            if (el && spending.travel !== undefined) el.value = spending.travel !== '' && spending.travel != null ? String(spending.travel) : '';
+            el = document.getElementById('shopping-limit');
+            if (el && spending.shopping !== undefined) el.value = spending.shopping !== '' && spending.shopping != null ? String(spending.shopping) : '';
+            el = document.getElementById('misc-limit');
+            if (el && spending.miscellaneous !== undefined) el.value = spending.miscellaneous !== '' && spending.miscellaneous != null ? String(spending.miscellaneous) : '';
+        }
+
+        // State rehydration: repopulate Add Income / Add Expense modal inputs from saved data (after refresh)
+        function rehydrateModalInputs() {
+            if (!window.DataManager) return;
+            var inputEl;
+            var storedValue;
+            // Income modal: pre-fill from first income source if any
+            var income = typeof DataManager.getIncome === 'function' ? DataManager.getIncome() : [];
+            if (Array.isArray(income) && income.length > 0) {
+                var first = income[0];
+                if (first && (first.name != null || first.amount != null)) {
+                    inputEl = document.getElementById('income-name');
+                    if (inputEl && first.name !== undefined) { storedValue = first.name; inputEl.value = storedValue != null ? String(storedValue) : ''; }
+                    inputEl = document.getElementById('income-amount');
+                    if (inputEl && first.amount !== undefined) { storedValue = first.amount; inputEl.value = storedValue != null ? String(storedValue) : ''; }
+                }
+            }
+            // Fixed expense modal: pre-fill from first fixed expense if any
+            var fixed = typeof DataManager.getFixedExpenses === 'function' ? DataManager.getFixedExpenses() : [];
+            if (Array.isArray(fixed) && fixed.length > 0) {
+                var firstExp = fixed[0];
+                if (firstExp && (firstExp.name != null || firstExp.amount != null)) {
+                    inputEl = document.getElementById('expense-name');
+                    if (inputEl && firstExp.name !== undefined) { storedValue = firstExp.name; inputEl.value = storedValue != null ? String(storedValue) : ''; }
+                    inputEl = document.getElementById('expense-amount');
+                    if (inputEl && firstExp.amount !== undefined) { storedValue = firstExp.amount; inputEl.value = storedValue != null ? String(storedValue) : ''; }
+                }
+            }
+            // Flexible spending inputs are rehydrated in loadFlexibleSpending() above
         }
 
         // Debounced version for performance - batches updates
