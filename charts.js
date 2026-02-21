@@ -146,17 +146,16 @@ const ChartManager = {
                         displayColors: true,
                         callbacks: {
                             label: function(context) {
-                                const value = context.parsed.y;
-                                const sign = context.dataset.label === 'Expenses' ? '−' : '+';
-                                return `${context.dataset.label}: ${sign}₹${Math.abs(value).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                                const value = context.parsed && context.parsed.y != null ? context.parsed.y : 0;
+                                const sign = context.dataset && context.dataset.label === 'Expenses' ? '−' : '+';
+                                return `${(context.dataset && context.dataset.label) || ''}: ${sign}₹${Math.abs(Number(value)).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
                             },
                             footer: function(tooltipItems) {
-                                if (tooltipItems.length === 2) {
-                                    const income = tooltipItems[0].parsed.y;
-                                    const expenses = tooltipItems[1].parsed.y;
+                                if (tooltipItems && tooltipItems.length === 2) {
+                                    const income = (tooltipItems[0].parsed && tooltipItems[0].parsed.y != null) ? tooltipItems[0].parsed.y : 0;
+                                    const expenses = (tooltipItems[1].parsed && tooltipItems[1].parsed.y != null) ? tooltipItems[1].parsed.y : 0;
                                     const net = income - expenses;
-                                    const netColor = net >= 0 ? '#2ed573' : '#ff4757';
-                                    return `Net: ${net >= 0 ? '+' : ''}₹${net.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                                    return `Net: ${net >= 0 ? '+' : ''}₹${Number(net).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
                                 }
                                 return '';
                             }
@@ -211,7 +210,8 @@ const ChartManager = {
     updateIncomeExpenseChart() {
         if (!this.charts.incomeExpense || !window.DataManager) return;
         try {
-            const history = DataManager.getHistory ? DataManager.getHistory() : [];
+            const rawHistory = DataManager.getHistory ? DataManager.getHistory() : [];
+            const history = Array.isArray(rawHistory) ? rawHistory : [];
         const incomeHistory = [];
         const expenseHistory = [];
         const labels = [];
@@ -339,10 +339,11 @@ const ChartManager = {
                         callbacks: {
                             label: function(context) {
                                 const label = context.label || '';
-                                const value = context.parsed || 0;
-                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                                const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
-                                return `${label}: ₹${value.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (${percentage}%)`;
+                                const value = context.parsed != null ? context.parsed : 0;
+                                const dataArr = context.dataset && context.dataset.data;
+                                const total = Array.isArray(dataArr) ? dataArr.reduce((a, b) => a + (Number(b) || 0), 0) : 0;
+                                const percentage = total > 0 ? ((Number(value) / total) * 100).toFixed(1) : 0;
+                                return `${label}: ₹${Number(value).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (${percentage}%)`;
                             }
                         }
                     }
@@ -359,16 +360,19 @@ const ChartManager = {
     updateExpensePieChart() {
         if (!this.charts.expensePie || !window.DataManager) return;
         try {
-            const fixedExpenses = DataManager.getFixedExpenses ? DataManager.getFixedExpenses() : [];
-            const flexibleSpending = DataManager.getFlexibleSpending ? DataManager.getFlexibleSpending() : { food: 0, travel: 0, shopping: 0, miscellaneous: 0 };
-        
+            const rawFixed = DataManager.getFixedExpenses ? DataManager.getFixedExpenses() : [];
+            const fixedExpenses = Array.isArray(rawFixed) ? rawFixed : [];
+            const rawFlex = DataManager.getFlexibleSpending ? DataManager.getFlexibleSpending() : null;
+            const flexibleSpending = (rawFlex && typeof rawFlex === 'object') ? rawFlex : { food: 0, travel: 0, shopping: 0, miscellaneous: 0 };
         const categories = [];
         const amounts = [];
 
         // Fixed expenses
         fixedExpenses.forEach(expense => {
-            categories.push(expense.name);
-            amounts.push(expense.amount);
+            if (expense && (expense.name != null || expense.amount != null)) {
+                categories.push(expense.name || '');
+                amounts.push(Number(expense.amount) || 0);
+            }
         });
 
         // Flexible spending categories
@@ -506,7 +510,8 @@ const ChartManager = {
                         padding: 12,
                         callbacks: {
                             label: function(context) {
-                                return `Savings: ₹${context.parsed.y.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                                const y = context.parsed && context.parsed.y != null ? context.parsed.y : 0;
+                                return `Savings: ₹${Number(y).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
                             }
                         }
                     }
@@ -530,7 +535,7 @@ const ChartManager = {
                                 size: 11
                             },
                             callback: function(value) {
-                                return '₹' + value.toLocaleString('en-IN');
+                                return '₹' + (Number(value) || 0).toLocaleString('en-IN');
                             }
                         },
                         grid: {
@@ -550,7 +555,8 @@ const ChartManager = {
     updateSavingsLineChart() {
         if (!this.charts.savingsLine || !window.DataManager) return;
         try {
-            const history = DataManager.getHistory ? DataManager.getHistory() : [];
+            const rawHistory = DataManager.getHistory ? DataManager.getHistory() : [];
+            const history = Array.isArray(rawHistory) ? rawHistory : [];
             const now = new Date();
             
             // Find first activity date (user sign-in date) from history
@@ -717,7 +723,8 @@ const ChartManager = {
                         padding: 12,
                         callbacks: {
                             label: function(context) {
-                                return `Savings: ₹${context.parsed.y.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                                const y = context.parsed && context.parsed.y != null ? context.parsed.y : 0;
+                                return `Savings: ₹${Number(y).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
                             }
                         }
                     }
@@ -742,7 +749,7 @@ const ChartManager = {
                                 size: 11
                             },
                             callback: function(value) {
-                                return '₹' + value.toLocaleString('en-IN');
+                                return '₹' + (Number(value) || 0).toLocaleString('en-IN');
                             }
                         },
                         grid: {
@@ -762,7 +769,8 @@ const ChartManager = {
     updateSavingsBarChart() {
         if (!this.charts.savingsBar || !window.DataManager) return;
         try {
-            const history = DataManager.getHistory ? DataManager.getHistory() : [];
+            const rawHistory = DataManager.getHistory ? DataManager.getHistory() : [];
+            const history = Array.isArray(rawHistory) ? rawHistory : [];
             const now = new Date();
             
             // Calculate monthly savings from income and expenses history
@@ -886,7 +894,8 @@ const ChartManager = {
                         padding: 12,
                         callbacks: {
                             label: function(context) {
-                                return `Amount: ₹${context.parsed.y.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                                const y = context.parsed && context.parsed.y != null ? context.parsed.y : 0;
+                                return `Amount: ₹${Number(y).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
                             }
                         }
                     }

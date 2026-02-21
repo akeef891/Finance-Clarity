@@ -1137,10 +1137,14 @@
         window.showAddIncomeModal = showAddIncomeModal;
 
         function closeIncomeModal() {
-            document.getElementById('income-modal').classList.remove('active');
-            document.getElementById('income-name').value = '';
-            document.getElementById('income-amount').value = '';
+            var modal = document.getElementById('income-modal');
+            if (modal) modal.classList.remove('active');
+            var nameEl = document.getElementById('income-name');
+            var amountEl = document.getElementById('income-amount');
+            if (nameEl) nameEl.value = '';
+            if (amountEl) amountEl.value = '';
         }
+        window.closeIncomeModal = closeIncomeModal;
 
         function showAddExpenseModal() {
             var el = document.getElementById('expense-modal');
@@ -1149,10 +1153,14 @@
         window.showAddExpenseModal = showAddExpenseModal;
 
         function closeExpenseModal() {
-            document.getElementById('expense-modal').classList.remove('active');
-            document.getElementById('expense-name').value = '';
-            document.getElementById('expense-amount').value = '';
+            var modal = document.getElementById('expense-modal');
+            if (modal) modal.classList.remove('active');
+            var nameEl = document.getElementById('expense-name');
+            var amountEl = document.getElementById('expense-amount');
+            if (nameEl) nameEl.value = '';
+            if (amountEl) amountEl.value = '';
         }
+        window.closeExpenseModal = closeExpenseModal;
 
         // Close modals on outside click
         window.onclick = function(event) {
@@ -1185,8 +1193,10 @@
             document.querySelectorAll('.purchase-type-btn').forEach(btn => {
                 btn.classList.remove('active');
             });
-            document.querySelector(`[data-type="${type}"]`).classList.add('active');
+            var btn = document.querySelector('[data-type="' + type + '"]');
+            if (btn) btn.classList.add('active');
         }
+        window.selectPurchaseType = selectPurchaseType;
 
         // Income Management
         async function addIncome() {
@@ -1291,6 +1301,8 @@
                 }
             }
         }
+        window.deleteIncome = deleteIncome;
+        window.addIncome = addIncome;
 
         // Fixed Expenses Management
         async function addFixedExpense() {
@@ -1371,6 +1383,7 @@
                 }
             }
         }
+        window.deleteFixedExpense = deleteFixedExpense;
 
         // Flexible Spending Management
         function loadFlexibleSpending() {
@@ -1736,6 +1749,7 @@
                 });
             }
         }
+        window.closeHistoryModal = closeHistoryModal;
 
         // Close modals when clicking outside
         document.addEventListener('click', (e) => {
@@ -1995,6 +2009,7 @@
                 alert('Error deleting entry. Please try again.');
             }
         }
+        window.deleteHistoryEntry = deleteHistoryEntry;
 
         // Confirm clear history modal
         function confirmClearHistory() {
@@ -2011,6 +2026,7 @@
                 });
             }
         }
+        window.confirmClearHistory = confirmClearHistory;
 
         function closeConfirmClearModal() {
             const modal = document.getElementById('confirm-clear-modal');
@@ -2032,6 +2048,7 @@
                 });
             }
         }
+        window.closeConfirmClearModal = closeConfirmClearModal;
 
         // Clear all history
         async function clearAllHistory() {
@@ -2050,6 +2067,7 @@
                     alert('Error clearing history. Please try again.');
             }
         }
+        window.clearAllHistory = clearAllHistory;
 
         // Export history
         function exportHistory() {
@@ -2088,6 +2106,7 @@
             link.click();
             document.body.removeChild(link);
         }
+        window.exportHistory = exportHistory;
 
         // Reset Data
         function resetPersonalData() {
@@ -2434,6 +2453,7 @@
                 });
             }
         }
+        window.closeAboutModal = closeAboutModal;
 
         // Contact Us Modal Functions
         function openContactModal() {
@@ -2480,6 +2500,7 @@
                 msgDiv.textContent = '';
             }
         }
+        window.closeContactModal = closeContactModal;
 
         // Contact Form Submission Handlers - Netlify Forms
         async function handleContactSubmit(event) {
@@ -2666,6 +2687,28 @@
                 setupMessagesListener();
             }
         }
+        window.openAdminModal = openAdminModal;
+
+        function closeAdminModal() {
+            const modal = document.getElementById('admin-modal');
+            if (modal) {
+                modal.style.opacity = '1';
+                modal.style.transform = 'scale(1)';
+                requestAnimationFrame(() => {
+                    modal.style.transition = 'all 0.2s ease';
+                    modal.style.opacity = '0';
+                    modal.style.transform = 'scale(0.95)';
+                    setTimeout(() => {
+                        modal.classList.remove('active');
+                        modal.style.opacity = '';
+                        modal.style.transform = '';
+                        modal.style.transition = '';
+                        document.body.style.overflow = '';
+                    }, 200);
+                });
+            }
+        }
+        window.closeAdminModal = closeAdminModal;
 
         // Setup real-time listener for messages (onSnapshot)
         function setupMessagesListener() {
@@ -2824,6 +2867,7 @@
                 alert('Error updating message status. Please try again.');
             }
         }
+        window.toggleMessageRead = toggleMessageRead;
 
         // Check if user is admin and show admin button
         function checkAdminAccess() {
