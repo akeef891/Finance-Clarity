@@ -651,6 +651,13 @@ var AuthManager = {
             if (this.cachedFinanceData.flexibleSpending) {
                 localStorage.setItem(userKeys.FLEXIBLE, JSON.stringify(this.cachedFinanceData.flexibleSpending));
             }
+            if (typeof window.rehydrateInputsFromFinanceData === 'function') {
+                window.rehydrateInputsFromFinanceData({
+                    income: this.cachedFinanceData.income || [],
+                    fixedExpenses: this.cachedFinanceData.fixedExpenses || [],
+                    flexibleSpending: this.cachedFinanceData.flexibleSpending || { food: 0, travel: 0, shopping: 0, miscellaneous: 0 }
+                });
+            }
             return;
         }
 
@@ -709,6 +716,14 @@ var AuthManager = {
                         localStorage.setItem(userKeys.FLEXIBLE, JSON.stringify(data.flexibleSpending));
                     } else {
                         localStorage.setItem(userKeys.FLEXIBLE, JSON.stringify({ food: 0, travel: 0, shopping: 0, miscellaneous: 0 }));
+                    }
+                    // Rehydrate input fields after snapshot data is confirmed (runs only after data exists)
+                    if (typeof window.rehydrateInputsFromFinanceData === 'function') {
+                        window.rehydrateInputsFromFinanceData({
+                            income: data.income || [],
+                            fixedExpenses: data.fixedExpenses || [],
+                            flexibleSpending: (data.flexibleSpending && typeof data.flexibleSpending === 'object') ? data.flexibleSpending : { food: 0, travel: 0, shopping: 0, miscellaneous: 0 }
+                        });
                     }
                 } else {
                     // New user - create finance document with default values

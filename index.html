@@ -1404,35 +1404,45 @@
             if (el && spending.miscellaneous !== undefined) el.value = spending.miscellaneous !== '' && spending.miscellaneous != null ? String(spending.miscellaneous) : '';
         }
 
-        // State rehydration: repopulate Add Income / Add Expense modal inputs from saved data (after refresh)
+        // State rehydration: repopulate Add Income / Add Expense / Flexible inputs from saved data (after refresh)
         function rehydrateModalInputs() {
             if (!window.DataManager) return;
-            var inputEl;
-            var storedValue;
-            // Income modal: pre-fill from first income source if any
             var income = typeof DataManager.getIncome === 'function' ? DataManager.getIncome() : [];
-            if (Array.isArray(income) && income.length > 0) {
-                var first = income[0];
-                if (first && (first.name != null || first.amount != null)) {
-                    inputEl = document.getElementById('income-name');
-                    if (inputEl && first.name !== undefined) { storedValue = first.name; inputEl.value = storedValue != null ? String(storedValue) : ''; }
-                    inputEl = document.getElementById('income-amount');
-                    if (inputEl && first.amount !== undefined) { storedValue = first.amount; inputEl.value = storedValue != null ? String(storedValue) : ''; }
-                }
-            }
-            // Fixed expense modal: pre-fill from first fixed expense if any
             var fixed = typeof DataManager.getFixedExpenses === 'function' ? DataManager.getFixedExpenses() : [];
-            if (Array.isArray(fixed) && fixed.length > 0) {
-                var firstExp = fixed[0];
-                if (firstExp && (firstExp.name != null || firstExp.amount != null)) {
-                    inputEl = document.getElementById('expense-name');
-                    if (inputEl && firstExp.name !== undefined) { storedValue = firstExp.name; inputEl.value = storedValue != null ? String(storedValue) : ''; }
-                    inputEl = document.getElementById('expense-amount');
-                    if (inputEl && firstExp.amount !== undefined) { storedValue = firstExp.amount; inputEl.value = storedValue != null ? String(storedValue) : ''; }
-                }
-            }
-            // Flexible spending inputs are rehydrated in loadFlexibleSpending() above
+            var spending = DataManager.getFlexibleSpending ? DataManager.getFlexibleSpending() : null;
+            window.rehydrateInputsFromFinanceData({ income: income, fixedExpenses: fixed, flexibleSpending: spending });
         }
+
+        // Called from auth.js after Firestore snapshot resolves (data confirmed). Populates input fields only.
+        window.rehydrateInputsFromFinanceData = function(data) {
+            if (!data || typeof data !== 'object') return;
+            var inputEl, storedValue;
+            var income = Array.isArray(data.income) ? data.income : [];
+            if (income.length > 0 && income[0]) {
+                inputEl = document.getElementById('income-name');
+                if (inputEl && income[0].name !== undefined) { storedValue = income[0].name; inputEl.value = storedValue != null ? String(storedValue) : ''; }
+                inputEl = document.getElementById('income-amount');
+                if (inputEl && income[0].amount !== undefined) { storedValue = income[0].amount; inputEl.value = storedValue != null ? String(storedValue) : ''; }
+            }
+            var fixedExpenses = Array.isArray(data.fixedExpenses) ? data.fixedExpenses : [];
+            if (fixedExpenses.length > 0 && fixedExpenses[0]) {
+                inputEl = document.getElementById('expense-name');
+                if (inputEl && fixedExpenses[0].name !== undefined) { storedValue = fixedExpenses[0].name; inputEl.value = storedValue != null ? String(storedValue) : ''; }
+                inputEl = document.getElementById('expense-amount');
+                if (inputEl && fixedExpenses[0].amount !== undefined) { storedValue = fixedExpenses[0].amount; inputEl.value = storedValue != null ? String(storedValue) : ''; }
+            }
+            var flex = data.flexibleSpending && typeof data.flexibleSpending === 'object' ? data.flexibleSpending : null;
+            if (flex) {
+                inputEl = document.getElementById('food-limit');
+                if (inputEl && flex.food !== undefined) inputEl.value = flex.food !== '' && flex.food != null ? String(flex.food) : '';
+                inputEl = document.getElementById('travel-limit');
+                if (inputEl && flex.travel !== undefined) inputEl.value = flex.travel !== '' && flex.travel != null ? String(flex.travel) : '';
+                inputEl = document.getElementById('shopping-limit');
+                if (inputEl && flex.shopping !== undefined) inputEl.value = flex.shopping !== '' && flex.shopping != null ? String(flex.shopping) : '';
+                inputEl = document.getElementById('misc-limit');
+                if (inputEl && flex.miscellaneous !== undefined) inputEl.value = flex.miscellaneous !== '' && flex.miscellaneous != null ? String(flex.miscellaneous) : '';
+            }
+        };
 
         // Debounced version for performance - batches updates
         const debouncedUpdateFlexibleSpending = window.debounce ? window.debounce(function(category, amount) {
