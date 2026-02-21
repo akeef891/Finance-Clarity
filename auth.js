@@ -130,15 +130,18 @@ var AuthManager = {
                         await new Promise(resolve => setTimeout(resolve, 100));
                         await self.loadFinanceDataFromFirestore();
                         self.loadHistoryFromFirestore().catch(() => {});
-                        if (window.DataManager) {
-                            window.DataManager._initData();
-                        }
-                        self.hasLoadedInitialData = true;
-                        self.notifyAuthStateChange(user);
-                        if (typeof init === 'function' && !window.hasInitialized) {
-                            window.hasInitialized = true;
-                            init();
-                        }
+                    if (window.DataManager) {
+                        window.DataManager._initData();
+                    }
+                    if (typeof window.updateDashboard === 'function') {
+                        window.updateDashboard();
+                    }
+                    self.hasLoadedInitialData = true;
+                    self.notifyAuthStateChange(user);
+                    if (typeof init === 'function' && !window.hasInitialized) {
+                        window.hasInitialized = true;
+                        init();
+                    }
                     } catch (e) {
                         if (self.cachedFinanceData && window.DataManager) {
                             window.DataManager._initData();
