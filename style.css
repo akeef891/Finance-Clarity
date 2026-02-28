@@ -5269,3 +5269,12 @@ body {
         -webkit-overflow-scrolling: touch;
     }
 }
+
+/* Performance: avoid rendering off-screen content until needed (safe containers only) */
+.dashboard-container,
+.cards-container,
+.chart-container,
+.main-container {
+  content-visibility: auto;
+  contain-intrinsic-size: 500px;
+}
