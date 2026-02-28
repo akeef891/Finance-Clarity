@@ -2212,7 +2212,6 @@
 
         function showAuthModal(tab = 'signin') {
             loadFirebaseSDK(() => {
-              console.log("Firebase SDK ready");
               if (window.AuthManager && typeof window.AuthManager.init === "function") window.AuthManager.init();
             });
             // Check Firebase availability and update UI
